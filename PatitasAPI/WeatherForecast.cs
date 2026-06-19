@@ -1,4 +1,4 @@
-namespace TodoApi;
+namespace PatitasAPI;
 
 public class WeatherForecast
 {

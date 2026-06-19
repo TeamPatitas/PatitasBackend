@@ -1,0 +1,6 @@
+@PatitasAPI_HostAddress = http://localhost:5109
+
+GET {{PatitasAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

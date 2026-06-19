@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace TodoApi.Controllers;
+namespace PatitasAPI.Controllers;
 
 [ApiController]
 [Route("[controller]")]
