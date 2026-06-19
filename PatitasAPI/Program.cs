@@ -14,6 +14,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.MapGet("/", () => "Hola pez, este es el comienzo de algo grande xdd");
+
 app.UseAuthorization();
 
 app.MapControllers();
