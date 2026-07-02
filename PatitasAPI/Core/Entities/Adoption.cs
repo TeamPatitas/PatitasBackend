@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace PatitasAPI.Domain;
+namespace PatitasAPI.Core.Entities; 
 
 public enum AdoptionStatus
 {
@@ -12,32 +12,28 @@ public enum AdoptionStatus
 public class Adoption
 {
     [JsonPropertyName("id_adopcion")]
-    public string AdoptionId { get; set; }
-
-    [JsonPropertyName("id_adoptante")]
-    public string AdopterId { get; set; }
-
-    [JsonPropertyName("id_mascota")]
-    public string PetId { get; set; }
-
-    [JsonPropertyName("id_refugio")]
-    public string ShelterId { get; set; }
-
+    public Guid Id { get; set; } = Guid.NewGuid();
     [JsonPropertyName("estado")]
     public AdoptionStatus Status { get; set; } 
-
     [JsonPropertyName("notas")]
     public string Notes { get; set; }
+
+    // Foreign Variables
+    [JsonPropertyName("id_mascota")]
+    public Guid PetId { get; set; }
+    public Pet Pet { get; set; }
+
+    [JsonPropertyName("id_adoptante")]
+    public Guid AdopterId { get; set; }
+    public AppUser Adopter { get; set; }
 
     #pragma warning disable CS8618
     public Adoption() { }
 
-    public Adoption(string adoptionId, string adopterId, string petId, string shelterId, AdoptionStatus status, string notes)
+    public Adoption(Guid adopterId, Guid petId, AdoptionStatus status, string notes)
     {
-        AdoptionId = adoptionId;
         AdopterId = adopterId;
         PetId = petId;
-        ShelterId = shelterId;
         Status = status;
         Notes = notes;
     }

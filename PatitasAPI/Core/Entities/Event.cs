@@ -1,17 +1,17 @@
 using System.Text.Json.Serialization;
 
-namespace PatitasAPI.Domain;
+namespace PatitasAPI.Core.Entities; 
 
 public class Event
 {
     [JsonPropertyName("idEvento")]
-    public string EventId { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [JsonPropertyName("nombre")]
     public string Name { get; set; }
 
     [JsonPropertyName("fecha")]
-    public string Date { get; set; }
+    public DateTime Date { get; set; }
 
     [JsonPropertyName("descripcion")]
     public string Description { get; set; }
@@ -19,12 +19,16 @@ public class Event
     [JsonPropertyName("fotoUrl")]
     public string PhotoUrl { get; set; }
 
+    // Foreign Variables
+    [JsonPropertyName("id_refugio")]
+    public Guid ShelterId { get; set; }
+    public Shelter Shelter { get; set; }
+
 #pragma warning disable CS8618
     public Event() { }
 
-    public Event(string eventId, string name, string date, string description, string photoUrl)
+    public Event(string name, DateTime date, string description, string photoUrl)
     {
-        EventId = eventId;
         Name = name;
         Date = date;
         Description = description;
