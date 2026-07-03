@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using PatitasAPI.API;
 using PatitasAPI.Infraestructure;
+using PatitasAPI.Infraestructure.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +26,13 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.MapGet("/", () => "Hola pez, este es el comienzo de algo grande xdd");
+using (var scope = app.Services.CreateScope())
+{
+    await RoleSeeder.SeedRolesAsync(scope.ServiceProvider);
+}
+
+app.MapAllEndpoints();
+app.MapGet("/", () => "Hola pez, PatitasAPI made with ❤️ by GM4 & PatitasTeam");
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

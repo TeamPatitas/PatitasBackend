@@ -17,23 +17,19 @@ public class Adoption
     public AdoptionStatus Status { get; set; } 
     [JsonPropertyName("notas")]
     public string Notes { get; set; }
-
+    
     // Foreign Variables
-    [JsonPropertyName("id_mascota")]
+    [JsonPropertyName("id_usuario")]
+    public Guid AppUserId { get; set; }
+    public AppUser AppUser { get; set; }
+
     public Guid PetId { get; set; }
     public Pet Pet { get; set; }
-
-    [JsonPropertyName("id_adoptante")]
-    public Guid AdopterId { get; set; }
-    public AppUser Adopter { get; set; }
-
+    
     #pragma warning disable CS8618
-    public Adoption() { }
-
-    public Adoption(Guid adopterId, Guid petId, AdoptionStatus status, string notes)
+    public Adoption() {}
+    public Adoption(AdoptionStatus status, string notes)
     {
-        AdopterId = adopterId;
-        PetId = petId;
         Status = status;
         Notes = notes;
     }

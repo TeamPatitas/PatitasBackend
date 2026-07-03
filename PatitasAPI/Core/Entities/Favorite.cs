@@ -6,11 +6,12 @@ public class Favorite
 {
     [JsonPropertyName("idFavorito")]
     public Guid Id { get; set; } = Guid.NewGuid();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Foreign Variables
     [JsonPropertyName("idAdoptante")]
-    public Guid AdopterId { get; set; }
-    public AppUser Adopter { get; set; }
+    public Guid AppUserId { get; set; }
+    public AppUser AppUser { get; set; }
 
     [JsonPropertyName("idMascota")]
     public Guid PetId { get; set; }
@@ -19,9 +20,9 @@ public class Favorite
     #pragma warning disable CS8618
     public Favorite() { }
 
-    public Favorite(Guid adopterId, Guid petId)
+    public Favorite(Guid appUserId, Guid petId)
     {
-        AdopterId = adopterId;
+        AppUserId = appUserId;
         PetId = petId;
     }
 }

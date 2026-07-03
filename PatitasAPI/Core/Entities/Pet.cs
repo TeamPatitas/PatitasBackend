@@ -35,6 +35,11 @@ public class Pet
     [JsonPropertyName("id_refugio")]
     public Guid ShelterId { get; set; }
     public Shelter Shelter { get; set; }
+
+    // Navigation Properties
+    public ICollection<Adoption> Adoptions { get; set; } = new List<Adoption>();
+    public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+
     #pragma warning disable CS8618
     public Pet() { }
 

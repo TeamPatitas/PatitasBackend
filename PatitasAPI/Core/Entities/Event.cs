@@ -24,7 +24,7 @@ public class Event
     public Guid ShelterId { get; set; }
     public Shelter Shelter { get; set; }
 
-#pragma warning disable CS8618
+    #pragma warning disable CS8618
     public Event() { }
 
     public Event(string name, DateTime date, string description, string photoUrl)

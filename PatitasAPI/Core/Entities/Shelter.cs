@@ -22,10 +22,10 @@ public class Shelter
     [JsonPropertyName("foto")]
     public string PhotoUrl { get; set; }
 
-    // Foreign Variables
-    [JsonPropertyName("idDueno")]
-    public Guid OwnerId { get; set; }
-    public AppUser Owner { get; set; }
+    // Navigation Variables
+    public ICollection<Pet> Pets { get; set; } = [];
+    public ICollection<Event> Events { get; set; } = [];
+    public ICollection<AppUser> Owners { get; set; } = [];
 
     #pragma warning disable CS8618
     public Shelter() { }
