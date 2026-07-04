@@ -1,9 +1,10 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PatitasAPI.Core.Entities;
 
 namespace PatitasAPI.Infraestructure.Data;
 
-public class PatitasDbContext(DbContextOptions<PatitasDbContext> options) : DbContext(options)
+public class PatitasDbContext(DbContextOptions<PatitasDbContext> options) : IdentityDbContext<AppUser>(options)
 {
     public DbSet<Adoption> Adoptions { get; set; }
     public DbSet<AppUser> AppUsers { get; set; }

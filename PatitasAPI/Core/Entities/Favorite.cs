@@ -10,7 +10,7 @@ public class Favorite
 
     // Foreign Variables
     [JsonPropertyName("idAdoptante")]
-    public Guid AppUserId { get; set; }
+    public string AppUserId { get; set; }
     public AppUser AppUser { get; set; }
 
     [JsonPropertyName("idMascota")]
@@ -20,7 +20,7 @@ public class Favorite
     #pragma warning disable CS8618
     public Favorite() { }
 
-    public Favorite(Guid appUserId, Guid petId)
+    public Favorite(string appUserId, Guid petId)
     {
         AppUserId = appUserId;
         PetId = petId;

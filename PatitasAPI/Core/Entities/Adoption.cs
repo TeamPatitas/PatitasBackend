@@ -20,7 +20,7 @@ public class Adoption
     
     // Foreign Variables
     [JsonPropertyName("id_usuario")]
-    public Guid AppUserId { get; set; }
+    public string AppUserId { get; set; }
     public AppUser AppUser { get; set; }
 
     public Guid PetId { get; set; }
@@ -28,8 +28,10 @@ public class Adoption
     
     #pragma warning disable CS8618
     public Adoption() {}
-    public Adoption(AdoptionStatus status, string notes)
+    public Adoption(string appUserId, Guid petId, AdoptionStatus status, string notes)
     {
+        AppUserId = appUserId;
+        PetId = petId;
         Status = status;
         Notes = notes;
     }
