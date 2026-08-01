@@ -30,7 +30,8 @@ public static class PatitasEnv
         var dbUser = Environment.GetEnvironmentVariable("POSTGRES_USER");
         var dbPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD");
         var dbPort = Environment.GetEnvironmentVariable("POSTGRES_PORT");
+        var dbHost = Environment.GetEnvironmentVariable("SERVICE_IP");
 
-        return $"Host=localhost;Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
+        return $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
     }
 }
