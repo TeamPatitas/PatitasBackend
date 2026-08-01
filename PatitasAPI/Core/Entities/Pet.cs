@@ -1,12 +1,19 @@
 namespace PatitasAPI.Core.Entities;
 
+public enum Species
+{
+    OTHER,
+    DOG,
+    CAT,
+}
+
 public class Pet
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
     public string Name { get; set; }
 
-    public string Species { get; set; }
+    public Species Species { get; set; }
 
     public string Breed { get; set; }
 
@@ -31,7 +38,7 @@ public class Pet
     #pragma warning disable CS8618
     public Pet() { }
 
-    public Pet(string name, string species, string breed, string gender, string temperament, string story, List<string> photos, bool aviable)
+    public Pet(string name, Species species, string breed, string gender, string temperament, string story, List<string> photos, bool aviable)
     {
         Name = name;
         Species = species;

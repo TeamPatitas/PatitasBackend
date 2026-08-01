@@ -6,7 +6,9 @@ public class Event
 
     public string Name { get; set; }
 
-    public DateTime Date { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime EventDate { get; set; }
 
     public string Description { get; set; }
 
@@ -22,7 +24,7 @@ public class Event
     public Event(string name, DateTime date, string description, string photoUrl)
     {
         Name = name;
-        Date = date;
+        EventDate = date;
         Description = description;
         PhotoUrl = photoUrl;
     }
