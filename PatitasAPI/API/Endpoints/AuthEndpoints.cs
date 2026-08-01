@@ -20,5 +20,18 @@ public static class AuthEndpoints
                 return Results.BadRequest(new { message = ex.Message });
             }
         }).WithName("Iniciar Sesión");
+
+        group.MapPost("/register", async (RegisterRequest request, IAuthService authService) =>
+        {
+            try
+            {
+                var response = await authService.RegisterAsync(request);
+                return Results.Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        }).WithName("Registrarse");
     }
 }

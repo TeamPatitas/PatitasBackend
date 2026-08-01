@@ -34,7 +34,7 @@ public static class AuthSeeder
                 FirstName = "Admin",
                 LastName = "Principal",
                 Gender = Gender.MALE,
-                Age = 20
+                BirthDate = new DateOnly(2005, 1, 1)
             };
 
             var result = await userManager.CreateAsync(newAdmin, defaultPassword);
@@ -53,7 +53,7 @@ public static class AuthSeeder
                 FirstName = "Juan",
                 LastName = "Voluntario",
                 Gender = Gender.MALE,
-                Age = 25
+                BirthDate = new DateOnly(2007, 6, 8)
             };
 
             var result = await userManager.CreateAsync(newVoluntario, defaultPassword);
@@ -72,7 +72,7 @@ public static class AuthSeeder
                 FirstName = "Maria",
                 LastName = "Adoptante",
                 Gender = Gender.FEMALE,
-                Age = 28
+                BirthDate = new DateOnly(2005, 1, 1)
             };
 
             var result = await userManager.CreateAsync(newAdoptante, defaultPassword);
