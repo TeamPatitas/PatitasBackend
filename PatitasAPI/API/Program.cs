@@ -45,6 +45,11 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Patitas API v1");
+    });
 }
 
 using (var scope = app.Services.CreateScope())
@@ -58,7 +63,7 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Ocurrió un error al crear la base de datos.");
     }
 
-    await RoleSeeder.SeedRolesAsync(scope.ServiceProvider);
+    await AuthSeeder.SeedRolesAsync(scope.ServiceProvider);
 }
 
 app.MapAllEndpoints();

@@ -30,10 +30,11 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IConfiguratio
     private async Task<string> GenerateJwt(AppUser user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
+        var jwtKey = PatitasEnv.GetEnvVariable("JWT_SECRET_KEY");
         var roles = await _userManager.GetRolesAsync(user);
         var userRole = roles.FirstOrDefault() ?? "Worker";
 
-        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
+        var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
         var claims = new List<Claim>
         {
