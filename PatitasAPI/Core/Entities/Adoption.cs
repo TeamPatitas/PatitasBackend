@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace PatitasAPI.Core.Entities; 
 
 public enum AdoptionStatus
@@ -11,15 +9,11 @@ public enum AdoptionStatus
 
 public class Adoption
 {
-    [JsonPropertyName("id_adopcion")]
     public Guid Id { get; set; } = Guid.NewGuid();
-    [JsonPropertyName("estado")]
     public AdoptionStatus Status { get; set; } 
-    [JsonPropertyName("notas")]
     public string Notes { get; set; }
     
     // Foreign Variables
-    [JsonPropertyName("id_usuario")]
     public string AppUserId { get; set; }
     public AppUser AppUser { get; set; }
 
