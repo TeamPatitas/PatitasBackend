@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.OpenApi;
 using PatitasAPI.API;
 using PatitasAPI.Infraestructure;
+using PatitasAPI.Infraestructure.Data;
 using PatitasAPI.Infraestructure.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +19,25 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 builder.Services.AddInfraestructureServices(builder.Configuration);
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "PatitasAlRescate API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "xd hola."
+    });
+
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 
 var app = builder.Build();
 
@@ -28,6 +49,15 @@ if (app.Environment.IsDevelopment())
 
 using (var scope = app.Services.CreateScope())
 {
+    var services = scope.ServiceProvider;
+    try {
+        var ctx = services.GetRequiredService<PatitasDbContext>();
+        ctx.Database.EnsureCreated();
+    } catch(Exception ex) {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocurrió un error al crear la base de datos.");
+    }
+
     await RoleSeeder.SeedRolesAsync(scope.ServiceProvider);
 }
 
