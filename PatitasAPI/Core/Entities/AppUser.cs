@@ -1,11 +1,6 @@
 using Microsoft.AspNetCore.Identity;
+using PatitasAPI.Core.Utils;
 namespace PatitasAPI.Core.Entities; 
-
-public enum Gender
-{
-    MALE,
-    FEMALE
-}
 
 public class AppUser : IdentityUser
 {

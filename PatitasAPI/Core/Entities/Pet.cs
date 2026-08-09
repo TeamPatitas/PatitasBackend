@@ -1,11 +1,5 @@
 namespace PatitasAPI.Core.Entities;
-
-public enum Species
-{
-    OTHER,
-    DOG,
-    CAT,
-}
+using PatitasAPI.Core.Utils;
 
 public class Pet
 {
@@ -17,7 +11,7 @@ public class Pet
 
     public string Breed { get; set; }
 
-    public string Gender { get; set; }
+    public Gender Gender { get; set; }
 
     public string Temperament { get; set; }
 
@@ -32,13 +26,13 @@ public class Pet
     public Shelter Shelter { get; set; }
 
     // Navigation Properties
-    public ICollection<Adoption> Adoptions { get; set; } = new List<Adoption>();
-    public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+    public ICollection<Adoption> Adoptions { get; set; } = [];
+    public ICollection<Favorite> Favorites { get; set; } = [];
 
     #pragma warning disable CS8618
     public Pet() { }
 
-    public Pet(string name, Species species, string breed, string gender, string temperament, string story, List<string> photos, bool aviable)
+    public Pet(string name, Species species, string breed, Gender gender, string temperament, string story, List<string> photos, bool aviable)
     {
         Name = name;
         Species = species;

@@ -1,11 +1,5 @@
+using PatitasAPI.Core.Utils;
 namespace PatitasAPI.Core.Entities; 
-
-public enum AdoptionStatus
-{
-    Requested,
-    Approved,
-    Rejected
-}
 
 public class Adoption
 {
