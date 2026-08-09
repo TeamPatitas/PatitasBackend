@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using PatitasAPI.Core.DTOs;
 using PatitasAPI.Core.Entities;
 using PatitasAPI.Core.Interfaces;
+using PatitasAPI.Core.Utils;
 
 namespace PatitasAPI.Infraestructure.Auth;
 

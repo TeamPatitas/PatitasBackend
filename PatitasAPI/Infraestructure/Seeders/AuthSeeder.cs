@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using PatitasAPI.Core.Entities;
+using PatitasAPI.Core.Utils;
 
 namespace PatitasAPI.Infraestructure.Seeders;
 
