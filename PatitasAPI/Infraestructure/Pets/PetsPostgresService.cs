@@ -12,7 +12,6 @@ public class PetsPostgresService(PatitasDbContext dbContext) : IPetService
 
     public async Task<PetResponse?> GetPetByIdAsync(Guid petId)
     {
-        Console.WriteLine($"Fetching pet with ID: {petId}");
         var pet = new Pet(
             name: "Firulais",
             species: Species.DOG,
@@ -24,6 +23,16 @@ public class PetsPostgresService(PatitasDbContext dbContext) : IPetService
             aviable: true 
         );
 
-        return new PetResponse(pet);
+        return new PetResponse(
+            pet.Id,
+            pet.Name,
+            pet.Species,
+            pet.Breed,
+            pet.Gender,
+            pet.Temperament,
+            pet.Story,
+            pet.Photos,
+            pet.Aviable
+        );
     }
 }

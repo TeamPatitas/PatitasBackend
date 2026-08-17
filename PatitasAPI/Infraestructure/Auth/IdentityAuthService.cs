@@ -10,10 +10,9 @@ using PatitasAPI.Core.Utils;
 
 namespace PatitasAPI.Infraestructure.Auth;
 
-public class IdentityAuthService(UserManager<AppUser> userManager, IConfiguration configuration) : IAuthService
+public class IdentityAuthService(UserManager<AppUser> userManager) : IAuthService
 {
     private readonly UserManager<AppUser> _userManager = userManager;
-    private readonly IConfiguration _configuration = configuration;
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
@@ -59,7 +58,6 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IConfiguratio
 
     private async Task<string> GenerateJwt(AppUser user)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
         var jwtKey = PatitasEnv.GetEnvVariable("JWT_SECRET_KEY");
         var roles = await _userManager.GetRolesAsync(user);
         var userRole = roles.FirstOrDefault() ?? "Worker";
@@ -78,8 +76,8 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IConfiguratio
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddDays(20),
-            Issuer = jwtSettings["Issuer"],
-            Audience = jwtSettings["Audience"],
+            Issuer = "PatitasTest",
+            Audience = "PatitasTest",
             SigningCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256Signature)
         };
 
