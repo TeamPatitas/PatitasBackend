@@ -19,7 +19,7 @@ public class Pet
 
     public List<string> Photos { get; set; } = [];
 
-    public bool Aviable { get; set; } = false;
+    public bool Available { get; set; } = false;
 
     // Foreign Variables
     public Guid ShelterId { get; set; }
@@ -32,7 +32,7 @@ public class Pet
     #pragma warning disable CS8618
     public Pet() { }
 
-    public Pet(string name, Species species, string breed, Gender gender, string temperament, string story, List<string> photos, bool aviable)
+    public Pet(string name, Species species, string breed, Gender gender, string temperament, string story, List<string> photos, bool available)
     {
         Name = name;
         Species = species;
@@ -41,6 +41,6 @@ public class Pet
         Temperament = temperament;
         Story = story;
         Photos = photos;
-        Aviable = aviable;
+        Available = available;
     }
 }
