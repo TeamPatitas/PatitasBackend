@@ -1,7 +1,7 @@
 using PatitasAPI.Core.Utils;
 namespace PatitasAPI.Core.DTOs;
 
-public record PetResponse(
+public record CreatePetResponse(
     Guid Id,
     string Name,
     Species Specie,
@@ -34,12 +34,4 @@ public record UpdatePetRequest(
     string? Story,
     List<string>? Photos,
     bool? Available
-);
-
-public record PagedResponse<T>(
-    IEnumerable<T> Items,
-    int Page,
-    int PageSize,
-    int TotalCount,
-    int TotalPages
 );
