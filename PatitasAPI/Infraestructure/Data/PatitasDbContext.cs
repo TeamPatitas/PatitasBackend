@@ -71,7 +71,7 @@ public class PatitasDbContext(DbContextOptions<PatitasDbContext> options) : Iden
             entity.HasOne(a => a.Pet)
                 .WithMany(p => p.Adoptions)
                 .HasForeignKey(a => a.PetId)
-                .OnDelete(DeleteBehavior.Restrict); // NUNCA borrar historial de adopción si se borra la mascota
+                .OnDelete(DeleteBehavior.Cascade); // Borrado en cascada: si se borra la mascota se borran sus adopciones (c va a avisar eso en FrontEnd)
         });
     }
 }

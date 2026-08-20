@@ -16,10 +16,10 @@ public class IdentityAuthService(UserManager<AppUser> userManager) : IAuthServic
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email) ?? throw new Exception("Invalid credentials");
+        var user = await _userManager.FindByEmailAsync(request.Email) ?? throw new Exception("Credenciales inválidas");
 
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-        if (!isPasswordValid) throw new Exception("Invalid credentials");
+        if (!isPasswordValid) throw new Exception("Credenciales inválidas");
 
         var token = await GenerateJwt(user);
         var roles = await _userManager.GetRolesAsync(user);
@@ -30,10 +30,11 @@ public class IdentityAuthService(UserManager<AppUser> userManager) : IAuthServic
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
-        if (existingUser != null) throw new Exception("Email already in use");
+        if (existingUser != null) throw new Exception("Ese correo ya está en uso");
         if (!Enum.IsDefined(typeof(Gender), request.Gender))
         {
-            throw new Exception("Invalid gender value. Use 0 for MALE or 1 for FEMALE.");
+            throw new Exception("Valor de Género inválido. Use 0 para MASCULINO o 1 para FEMENINO.");
+
         }
 
         var user = new AppUser
@@ -47,12 +48,12 @@ public class IdentityAuthService(UserManager<AppUser> userManager) : IAuthServic
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded) throw new Exception("Error creating user");
+        if (!result.Succeeded) throw new Exception("Error al crear el usuario: " + string.Join(", ", result.Errors.Select(e => e.Description)));
         await _userManager.AddToRoleAsync(user, "User");
 
         var token = await GenerateJwt(user);
         var roles = await _userManager.GetRolesAsync(user);
-        
+
         return new AuthResponse(token, [.. roles]);
     }
 

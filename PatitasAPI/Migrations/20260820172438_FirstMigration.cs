@@ -37,7 +37,7 @@ namespace PatitasAPI.Migrations
                     Latitude = table.Column<double>(type: "double precision", nullable: true),
                     Longitude = table.Column<double>(type: "double precision", nullable: true),
                     PhotoUrl = table.Column<string>(type: "text", nullable: true),
-                    IsAviable = table.Column<bool>(type: "boolean", nullable: false)
+                    IsAvailable = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -139,7 +139,7 @@ namespace PatitasAPI.Migrations
                     Temperament = table.Column<string>(type: "text", nullable: false),
                     Story = table.Column<string>(type: "text", nullable: false),
                     Photos = table.Column<List<string>>(type: "text[]", nullable: false),
-                    Aviable = table.Column<bool>(type: "boolean", nullable: false),
+                    Available = table.Column<bool>(type: "boolean", nullable: false),
                     ShelterId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
@@ -262,7 +262,7 @@ namespace PatitasAPI.Migrations
                         column: x => x.PetId,
                         principalTable: "Pets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(

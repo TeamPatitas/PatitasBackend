@@ -13,7 +13,7 @@ using PatitasAPI.Infraestructure.Data;
 namespace PatitasAPI.Migrations
 {
     [DbContext(typeof(PatitasDbContext))]
-    [Migration("20260820163420_FirstMigration")]
+    [Migration("20260820172438_FirstMigration")]
     partial class FirstMigration
     {
         /// <inheritdoc />
@@ -342,7 +342,7 @@ namespace PatitasAPI.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("Aviable")
+                    b.Property<bool>("Available")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Breed")
@@ -392,7 +392,7 @@ namespace PatitasAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsAviable")
+                    b.Property<bool>("IsAvailable")
                         .HasColumnType("boolean");
 
                     b.Property<double?>("Latitude")
@@ -475,7 +475,7 @@ namespace PatitasAPI.Migrations
                     b.HasOne("PatitasAPI.Core.Entities.Pet", "Pet")
                         .WithMany("Adoptions")
                         .HasForeignKey("PetId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("AppUser");
