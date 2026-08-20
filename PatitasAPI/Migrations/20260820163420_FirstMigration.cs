@@ -110,6 +110,8 @@ namespace PatitasAPI.Migrations
                     Name = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     EventDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Latitude = table.Column<string>(type: "text", nullable: false),
+                    Longitude = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     PhotoUrl = table.Column<string>(type: "text", nullable: false),
                     ShelterId = table.Column<Guid>(type: "uuid", nullable: false)

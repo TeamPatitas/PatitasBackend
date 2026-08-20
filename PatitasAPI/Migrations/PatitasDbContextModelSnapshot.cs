@@ -286,6 +286,14 @@ namespace PatitasAPI.Migrations
                     b.Property<DateTime>("EventDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Latitude")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Longitude")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");

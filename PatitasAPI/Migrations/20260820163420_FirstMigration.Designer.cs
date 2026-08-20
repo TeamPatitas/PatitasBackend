@@ -13,7 +13,7 @@ using PatitasAPI.Infraestructure.Data;
 namespace PatitasAPI.Migrations
 {
     [DbContext(typeof(PatitasDbContext))]
-    [Migration("20260809210141_FirstMigration")]
+    [Migration("20260820163420_FirstMigration")]
     partial class FirstMigration
     {
         /// <inheritdoc />
@@ -288,6 +288,14 @@ namespace PatitasAPI.Migrations
 
                     b.Property<DateTime>("EventDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Latitude")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Longitude")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
