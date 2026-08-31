@@ -7,7 +7,6 @@ using PatitasAPI.Core.Entities;
 using PatitasAPI.Core.Interfaces;
 using PatitasAPI.Infraestructure.Auth;
 using PatitasAPI.Infraestructure.Data;
-using PatitasAPI.Infraestructure.Pets;
 
 namespace PatitasAPI.Infraestructure;
 
@@ -52,6 +51,7 @@ public static class InfraestructureServices
         // Scoped Services
         services.AddScoped<IAuthService, IdentityAuthService>();
         services.AddScoped<IPetService, PetsPostgresService>();
+        services.AddScoped<IShelterService, ShelterPostgresService>();
 
         return services;
     }

@@ -3,10 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using PatitasAPI.Core.DTOs;
 using PatitasAPI.Core.Entities;
 using PatitasAPI.Core.Interfaces;
-using PatitasAPI.Core.Utils;
 using PatitasAPI.Infraestructure.Data;
 
-namespace PatitasAPI.Infraestructure.Pets;
+namespace PatitasAPI.Infraestructure.Data;
 
 public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser> userManager) : IPetService
 {

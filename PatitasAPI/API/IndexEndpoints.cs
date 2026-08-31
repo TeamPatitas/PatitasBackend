@@ -7,6 +7,7 @@ public static class IndexEndpoints
     {
         app.MapAuthEndpoints();
         app.MapPetEndpoints();
+        app.MapShelterEndpoints();
 
         if(app.Environment.IsDevelopment())
         {

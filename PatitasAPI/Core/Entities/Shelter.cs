@@ -22,7 +22,7 @@ public class Shelter
     #pragma warning disable CS8618
     public Shelter() { }
 
-    public Shelter(string name, string address, double? latitude, double? longitude, string photoUrl)
+    public Shelter(string name, string address, double? latitude = null, double? longitude = null, string? photoUrl = null)
     {
         Name = name;
         Address = address;

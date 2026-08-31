@@ -1,4 +1,4 @@
-namespace PatitasAPI.Core.Utils;
+namespace PatitasAPI.Core.DTOs;
 
 public record PagedResponse<T>(
     IEnumerable<T> Items,
