@@ -14,6 +14,7 @@ public record UserResponse(
     string FirstName,
     string LastName,
     string Email,
+    bool IsEmailConfirmed,
     int Gender,
     string PhotoUrl,
     DateOnly BirthDate,

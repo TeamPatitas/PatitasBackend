@@ -25,6 +25,7 @@ public static class AuthEndpoints
                 appUser.FirstName,
                 appUser.LastName,
                 appUser.Email ?? "",
+                appUser.EmailConfirmed,
                 (int)appUser.Gender,
                 appUser.PhotoUrl ?? "",
                 appUser.BirthDate,
