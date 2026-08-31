@@ -1,6 +1,6 @@
 namespace PatitasAPI.Core.DTOs;
 
-public record CreateShelterResponse(
+public record ShelterResponse(
     Guid Id,
     string Name,
     string Address,

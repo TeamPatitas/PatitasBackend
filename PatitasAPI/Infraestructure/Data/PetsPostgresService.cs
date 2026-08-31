@@ -75,7 +75,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
             request.Temperament,
             request.Story,
             request.Photos ?? [],
-            request.Available
+            request.Available ?? false
         )
 
         {

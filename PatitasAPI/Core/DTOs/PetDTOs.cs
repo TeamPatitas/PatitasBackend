@@ -22,7 +22,7 @@ public record CreatePetRequest(
     string Temperament,
     string Story,
     List<string> Photos,
-    bool Available
+    bool? Available = false
 );
 
 public record UpdatePetRequest(
