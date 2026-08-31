@@ -51,5 +51,13 @@ public static class ShelterEndpoints
             var result = await shelterService.GetAllAsync(page ?? 1, pageSize ?? 20, userId);
             return Results.Ok(result);
         }).WithName("GetAllShelters").RequireAuthorization("User");
+
+        group.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal user, IShelterService shelterService) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await shelterService.GetByIdAsync(id, userId);
+            if (result == null) return Results.NotFound();
+            return Results.Ok(result);
+        }).WithName("GetShelterById").RequireAuthorization("User");
     }
 }

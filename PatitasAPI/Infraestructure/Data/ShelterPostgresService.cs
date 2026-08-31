@@ -101,4 +101,22 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             totalPages
         );
     }
+
+    public async Task<ShelterResponse?> GetByIdAsync(Guid shelterId, string? requesterUserId = null)
+    {
+        var shelter = await _context.Shelters.FindAsync(shelterId);
+        if (shelter == null) return null;
+
+        if (!shelter.IsAvailable)
+        {
+            if (requesterUserId == null) return null;
+            var user = await _userManager.FindByIdAsync(requesterUserId);
+            if (user == null) return null;
+            var isDev = await _userManager.IsInRoleAsync(user, "Dev");
+            var isOwner = user.ShelterId == shelter.Id;
+            if (!isDev && !isOwner) return null;
+        }
+
+        return ToResponse(shelter);
+    }
 }

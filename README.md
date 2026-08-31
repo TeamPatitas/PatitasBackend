@@ -268,7 +268,7 @@ curl -X PATCH http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
 Borrado físico en cascada.
 
 * **Rol**: Requiere `ShelterOwner` o `Dev` (solo su shelter, `Dev` bypass).
-* **Efecto**: hard delete — borra favoritos y adopciones asociados. Irreversible.
+* **Efecto**: hard delete — borra favoritos y adopciones asociados. **IRREVERSIBLE**.
 
 **curl Request**:
 ```bash
