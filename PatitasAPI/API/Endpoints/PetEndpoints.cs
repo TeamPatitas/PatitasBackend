@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using PatitasAPI.Core.DTOs;
 using PatitasAPI.Core.Interfaces;
+using PatitasAPI.Core.Utils;
 namespace PatitasAPI.API.Endpoints;
 
 public static class PetEndpoints
@@ -9,19 +11,29 @@ public static class PetEndpoints
     {
         var group = app.MapGroup("/pet").WithTags("Mascotas");
 
-        group.MapPost("/", async (CreatePetRequest request, ClaimsPrincipal user, IPetService petService) =>
+        group.MapPost("/", async (
+            [FromForm] string Name,
+            [FromForm] Species Species,
+            [FromForm] string Breed,
+            [FromForm] Gender Gender,
+            [FromForm] string Temperament,
+            [FromForm] string Story,
+            [FromForm] bool? Available,
+            [FromForm] List<IFormFile>? Photos,
+            ClaimsPrincipal user, IPetService petService) =>
         {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return Results.Unauthorized();
             try
             {
-                var created = await petService.CreatePetAsync(request, userId);
+                var request = new CreatePetRequest(Name, Species, Breed, Gender, Temperament, Story, Available);
+                var created = await petService.CreatePetAsync(request, Photos, userId);
                 return Results.Created($"/pet/{created.Id}", created);
             }
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("CreatePet").RequireAuthorization("ShelterOwner");
+        }).WithName("CreatePet").RequireAuthorization("ShelterOwner").DisableAntiforgery();
 
         group.MapGet("/", async (int? page, int? pageSize, ClaimsPrincipal user, IPetService petService) =>
         {
@@ -55,6 +67,21 @@ public static class PetEndpoints
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("UpdatePet").RequireAuthorization("ShelterOwner");
+
+        group.MapPatch("/{petId:guid}/photo/{photoIndex:int}", async (Guid petId, int photoIndex, IFormFile photo, ClaimsPrincipal user, IPetService petService) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Results.Unauthorized();
+            try
+            {
+                var updated = await petService.UpdatePetPhotoAsync(petId, photoIndex, photo, userId);
+                if (updated == null) return Results.NotFound();
+                return Results.Ok(updated);
+            }
+            catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
+            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("UpdatePetPhoto").RequireAuthorization("ShelterOwner").DisableAntiforgery();
 
         group.MapDelete("/{petId:guid}", async (Guid petId, ClaimsPrincipal user, IPetService petService) =>
         {

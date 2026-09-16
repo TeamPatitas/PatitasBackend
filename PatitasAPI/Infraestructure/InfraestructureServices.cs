@@ -7,6 +7,7 @@ using PatitasAPI.Core.Entities;
 using PatitasAPI.Core.Interfaces;
 using PatitasAPI.Infraestructure.Auth;
 using PatitasAPI.Infraestructure.Data;
+using PatitasAPI.Infraestructure.Storage;
 
 namespace PatitasAPI.Infraestructure;
 
@@ -47,6 +48,9 @@ public static class InfraestructureServices
                 ValidateAudience = false
             };
         });
+
+        //R3 Storage
+        services.AddScoped<IStorageService, CloudflareR2Service>();
 
         // Scoped Services
         services.AddScoped<IAuthService, IdentityAuthService>();

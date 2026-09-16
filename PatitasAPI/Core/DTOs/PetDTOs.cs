@@ -21,7 +21,6 @@ public record CreatePetRequest(
     Gender Gender,
     string Temperament,
     string Story,
-    List<string> Photos,
     bool? Available = false
 );
 
@@ -32,6 +31,10 @@ public record UpdatePetRequest(
     Gender? Gender,
     string? Temperament,
     string? Story,
-    List<string>? Photos,
     bool? Available
+);
+
+public record UpdatePetPhotoRequest(
+    int PhotoIndex,
+    IFormFile Photo
 );

@@ -7,10 +7,11 @@ using PatitasAPI.Infraestructure.Data;
 
 namespace PatitasAPI.Infraestructure.Data;
 
-public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser> userManager) : IPetService
+public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser> userManager, IStorageService storageService) : IPetService
 {
     private readonly PatitasDbContext _dbContext = dbContext;
     private readonly UserManager<AppUser> _userManager = userManager;
+    private readonly IStorageService _storageService = storageService;
 
     private static CreatePetResponse ToResponse(Pet pet) => new(
         pet.Id,
@@ -25,17 +26,18 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         pet.ShelterId
     );
 
-    private static void ValidatePhotos(List<string>? photos)
+    private static void ValidatePhotoFiles(List<IFormFile>? photos)
     {
         if (photos == null) return;
-        if (photos.Count > 5)
-            throw new ArgumentException("Máximo 5 imágenes por mascota.");
-        foreach (var url in photos)
+        if (photos.Count > 3)
+            throw new ArgumentException("Máximo 3 imágenes por mascota.");
+        foreach (var file in photos)
         {
-            if (string.IsNullOrWhiteSpace(url) || !Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                throw new ArgumentException($"URL de foto inválida: {url}");
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-                throw new ArgumentException($"URL debe ser http/https: {url}");
+            if (file.Length == 0) throw new ArgumentException("Archivo vacío.");
+            if (file.Length > 10 * 1024 * 1024) throw new ArgumentException("Archivo excede 10MB.");
+            var ct = file.ContentType.ToLowerInvariant();
+            if (ct != "image/jpeg" && ct != "image/png" && ct != "image/webp" && ct != "image/jpg")
+                throw new ArgumentException($"Tipo de imagen no permitido: {ct}. Use jpeg/png/webp.");
         }
     }
 
@@ -51,7 +53,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         return await _userManager.IsInRoleAsync(user, "ShelterOwner") || await _userManager.IsInRoleAsync(user, "Dev");
     }
 
-    public async Task<CreatePetResponse> CreatePetAsync(CreatePetRequest request, string userId)
+    public async Task<CreatePetResponse> CreatePetAsync(CreatePetRequest request, List<IFormFile>? photos, string userId)
     {
         var user = await GetUserOrThrowAsync(userId);
 
@@ -65,7 +67,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (string.IsNullOrWhiteSpace(request.Breed)) throw new ArgumentException("Breed es requerido.");
         if (string.IsNullOrWhiteSpace(request.Temperament)) throw new ArgumentException("Temperament es requerido.");
         if (string.IsNullOrWhiteSpace(request.Story)) throw new ArgumentException("Story es requerido.");
-        ValidatePhotos(request.Photos);
+        ValidatePhotoFiles(photos);
 
         var pet = new Pet(
             request.Name,
@@ -74,16 +76,28 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
             request.Gender,
             request.Temperament,
             request.Story,
-            request.Photos ?? [],
+            [],
             request.Available ?? false
         )
-
         {
             ShelterId = user.ShelterId.Value
         };
 
         _dbContext.Pets.Add(pet);
         await _dbContext.SaveChangesAsync();
+
+        if (photos != null && photos.Count > 0)
+        {
+            var urls = new List<string>();
+            for (int i = 0; i < photos.Count; i++)
+            {
+                var url = await _storageService.UploadPetPhotoAsync(photos[i], pet.Id, i + 1);
+                urls.Add(url);
+            }
+            pet.Photos = urls;
+            await _dbContext.SaveChangesAsync();
+        }
+
         return ToResponse(pet);
     }
 
@@ -190,8 +204,6 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (!isDev && pet.ShelterId != user.ShelterId)
             throw new UnauthorizedAccessException("No puedes modificar mascotas de otro refugio.");
 
-        if (request.Photos != null) ValidatePhotos(request.Photos);
-
         if (request.Name != null)
         {
             if (string.IsNullOrWhiteSpace(request.Name)) throw new ArgumentException("Name no puede estar vacío.");
@@ -215,8 +227,40 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
             if (string.IsNullOrWhiteSpace(request.Story)) throw new ArgumentException("Story no puede estar vacío.");
             pet.Story = request.Story;
         }
-        if (request.Photos != null) pet.Photos = request.Photos;
         if (request.Available.HasValue) pet.Available = request.Available.Value;
+
+        await _dbContext.SaveChangesAsync();
+        return ToResponse(pet);
+    }
+
+    public async Task<CreatePetResponse?> UpdatePetPhotoAsync(Guid petId, int photoIndex, IFormFile photo, string userId)
+    {
+        if (photoIndex < 1 || photoIndex > 3) throw new ArgumentException("PhotoIndex debe ser 1, 2 o 3.");
+        ValidatePhotoFiles([photo]);
+
+        var user = await GetUserOrThrowAsync(userId);
+        if (!await IsShelterOwnerOrDevAsync(user))
+            throw new UnauthorizedAccessException("Se requiere rol ShelterOwner.");
+        if (user.ShelterId == null)
+            throw new InvalidOperationException("No Shelter associated with your user");
+
+        var pet = await _dbContext.Pets.FindAsync(petId);
+        if (pet == null) return null;
+
+        var isDev = await _userManager.IsInRoleAsync(user, "Dev");
+        if (!isDev && pet.ShelterId != user.ShelterId)
+            throw new UnauthorizedAccessException("No puedes modificar mascotas de otro refugio.");
+
+        var url = await _storageService.UploadPetPhotoAsync(photo, pet.Id, photoIndex);
+
+        var photos = pet.Photos.ToList();
+        while (photos.Count < photoIndex) photos.Add("");
+        photos[photoIndex - 1] = url;
+        // Trim trailing empty
+        photos = photos.Where((p, idx) => !string.IsNullOrEmpty(p) || idx < photos.FindLastIndex(x => !string.IsNullOrEmpty(x)) + 1).ToList();
+        pet.Photos = photos.Where(p => !string.IsNullOrEmpty(p)).ToList();
+        // Ensure max 3
+        if (pet.Photos.Count > 3) pet.Photos = pet.Photos.Take(3).ToList();
 
         await _dbContext.SaveChangesAsync();
         return ToResponse(pet);

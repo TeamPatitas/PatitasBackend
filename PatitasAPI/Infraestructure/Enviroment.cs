@@ -16,7 +16,12 @@ public static class PatitasEnv
             "POSTGRES_USER",
             "POSTGRES_PASSWORD",
             "POSTGRES_PORT",
-            "SERVICE_IP"
+            "SERVICE_IP",
+            "R2_ACCOUNT_ID",
+            "R2_ACCESS_KEY_ID",
+            "R2_SECRET_ACCESS_KEY",
+            "R2_BUCKET_NAME",
+            "R2_PUBLIC_URL"
         };
 
         foreach (var variable in requiredVariables)
