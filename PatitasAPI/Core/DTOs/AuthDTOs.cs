@@ -6,7 +6,15 @@ public record RegisterRequest(
     string Email, 
     string Password,
     DateOnly BirthDate,
-    int Gender
+    int Gender,
+    IFormFile? Photo = null
+);
+public record UpdateUserRequest(
+    string? FirstName,
+    string? LastName,
+    DateOnly? BirthDate,
+    int? Gender,
+    IFormFile? Photo = null
 );
 public record AuthResponse(string Token, List<string> Roles);
 public record UserResponse(

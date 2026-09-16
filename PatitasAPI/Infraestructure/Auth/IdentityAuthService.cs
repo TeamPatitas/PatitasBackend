@@ -10,9 +10,10 @@ using PatitasAPI.Core.Utils;
 
 namespace PatitasAPI.Infraestructure.Auth;
 
-public class IdentityAuthService(UserManager<AppUser> userManager) : IAuthService
+public class IdentityAuthService(UserManager<AppUser> userManager, IStorageService storageService) : IAuthService
 {
     private readonly UserManager<AppUser> _userManager = userManager;
+    private readonly IStorageService _storageService = storageService;
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
@@ -50,6 +51,15 @@ public class IdentityAuthService(UserManager<AppUser> userManager) : IAuthServic
         var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded) throw new Exception("Error al crear el usuario: " + string.Join(", ", result.Errors.Select(e => e.Description)));
         await _userManager.AddToRoleAsync(user, "User");
+
+        if (request.Photo != null)
+        {
+            if (request.Photo.Length > 10 * 1024 * 1024) throw new Exception("Foto excede 10MB");
+            var key = $"users/{user.Id}.webp";
+            var url = await _storageService.UploadFileAsync(request.Photo, key);
+            user.PhotoUrl = url;
+            await _userManager.UpdateAsync(user);
+        }
 
         var token = await GenerateJwt(user);
         var roles = await _userManager.GetRolesAsync(user);
