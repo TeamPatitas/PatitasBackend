@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using PatitasAPI.Core.DTOs;
 using PatitasAPI.Core.Interfaces;
 
@@ -9,7 +10,7 @@ public static class ShelterEndpoints
     public static void MapShelterEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/shelter").WithTags("Refugios");
-        group.MapPost("/", async (CreateShelterRequest request, ClaimsPrincipal user, IShelterService shelterService) =>
+        group.MapPost("/", async ([FromForm] CreateShelterRequest request, ClaimsPrincipal user, IShelterService shelterService) =>
         {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return Results.Unauthorized();
@@ -21,7 +22,22 @@ public static class ShelterEndpoints
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("CreateShelter").RequireAuthorization("User");
+        }).WithName("CreateShelter").RequireAuthorization("User").DisableAntiforgery();
+
+        group.MapPatch("/{id:guid}", async (Guid id, [FromForm] UpdateShelterRequest request, ClaimsPrincipal user, IShelterService shelterService) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Results.Unauthorized();
+            try
+            {
+                var result = await shelterService.UpdateAsync(id, request, userId);
+                if (result == null) return Results.NotFound(new { message = "Shelter not found" });
+                return Results.Ok(result);
+            }
+            catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
+            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("UpdateShelter").RequireAuthorization("User").DisableAntiforgery();
 
         group.MapPatch("/enable/{id:guid}", async (Guid id, IShelterService shelterService) =>
         {

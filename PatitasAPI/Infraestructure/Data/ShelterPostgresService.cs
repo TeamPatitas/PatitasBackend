@@ -6,10 +6,11 @@ using PatitasAPI.Core.Interfaces;
 
 namespace PatitasAPI.Infraestructure.Data;
 
-public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUser> userManager) : IShelterService
+public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUser> userManager, IStorageService storageService) : IShelterService
 {
     private readonly PatitasDbContext _context = context;
     private readonly UserManager<AppUser> _userManager = userManager;
+    private readonly IStorageService _storageService = storageService;
 
     private static ShelterResponse ToResponse(Shelter shelter) => new(
         shelter.Id,
@@ -32,11 +33,20 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             req.Address,
             req.Latitude,
             req.Longitude,
-            req.PhotoUrl
+            null
         );
 
         _context.Shelters.Add(shelter);
         await _context.SaveChangesAsync();
+
+        var photo = req.Photo;
+        if (photo != null)
+        {
+            ValidatePhoto(photo);
+            var key = $"shelters/{shelter.Id}.webp";
+            shelter.PhotoUrl = await _storageService.UploadFileAsync(photo, key);
+            await _context.SaveChangesAsync();
+        }
 
         user.ShelterId = shelter.Id;
         var updateResult = await _userManager.UpdateAsync(user);
@@ -44,6 +54,15 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             throw new InvalidOperationException("Error al asignar refugio al usuario: " + string.Join(", ", updateResult.Errors.Select(e => e.Description)));
 
         return ToResponse(shelter);
+    }
+
+    private static void ValidatePhoto(IFormFile photo)
+    {
+        if (photo.Length == 0) throw new ArgumentException("Archivo vacío.");
+        if (photo.Length > 10 * 1024 * 1024) throw new ArgumentException("Archivo excede 10MB.");
+        var ct = photo.ContentType.ToLowerInvariant();
+        if (ct != "image/jpeg" && ct != "image/png" && ct != "image/webp" && ct != "image/jpg")
+            throw new ArgumentException($"Tipo de imagen no permitido: {ct}. Use jpeg/png/webp.");
     }
 
     public async Task<ShelterResponse?> EnableAsync(Guid shelterId)
@@ -117,6 +136,41 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             if (!isDev && !isOwner) return null;
         }
 
+        return ToResponse(shelter);
+    }
+
+    public async Task<ShelterResponse?> UpdateAsync(Guid shelterId, UpdateShelterRequest request, string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId) ?? throw new UnauthorizedAccessException("Usuario no encontrado");
+        var shelter = await _context.Shelters.FindAsync(shelterId);
+        if (shelter == null) return null;
+
+        var isDev = await _userManager.IsInRoleAsync(user, "Dev");
+        var isOwner = user.ShelterId == shelterId;
+        if (!isDev && !isOwner) throw new UnauthorizedAccessException("No puedes modificar este refugio");
+
+        if (request.Name != null)
+        {
+            if (string.IsNullOrWhiteSpace(request.Name)) throw new ArgumentException("Name no puede estar vacío");
+            shelter.Name = request.Name;
+        }
+        if (request.Address != null)
+        {
+            if (string.IsNullOrWhiteSpace(request.Address)) throw new ArgumentException("Address no puede estar vacío");
+            shelter.Address = request.Address;
+        }
+        if (request.Latitude.HasValue) shelter.Latitude = request.Latitude;
+        if (request.Longitude.HasValue) shelter.Longitude = request.Longitude;
+
+        var photo = request.Photo;
+        if (photo != null)
+        {
+            ValidatePhoto(photo);
+            var key = $"shelters/{shelter.Id}.webp";
+            shelter.PhotoUrl = await _storageService.UploadFileAsync(photo, key);
+        }
+
+        await _context.SaveChangesAsync();
         return ToResponse(shelter);
     }
 }

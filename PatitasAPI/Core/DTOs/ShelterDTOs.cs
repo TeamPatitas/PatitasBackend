@@ -15,5 +15,13 @@ public record CreateShelterRequest(
     string Address,
     double? Latitude,
     double? Longitude,
-    string? PhotoUrl
+    IFormFile? Photo = null
+);
+
+public record UpdateShelterRequest(
+    string? Name,
+    string? Address,
+    double? Latitude,
+    double? Longitude,
+    IFormFile? Photo = null
 );
