@@ -13,7 +13,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly IStorageService _storageService = storageService;
 
-    private static CreatePetResponse ToResponse(Pet pet) => new(
+    private static PetResponse ToResponse(Pet pet) => new(
         pet.Id,
         pet.Name,
         pet.Species,
@@ -53,7 +53,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         return await _userManager.IsInRoleAsync(user, "ShelterOwner") || await _userManager.IsInRoleAsync(user, "Dev");
     }
 
-    public async Task<CreatePetResponse> CreatePetAsync(CreatePetRequest request, List<IFormFile>? photos, string userId)
+    public async Task<PetResponse> CreatePetAsync(CreatePetRequest request, string userId)
     {
         var user = await GetUserOrThrowAsync(userId);
 
@@ -67,7 +67,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (string.IsNullOrWhiteSpace(request.Breed)) throw new ArgumentException("Breed es requerido.");
         if (string.IsNullOrWhiteSpace(request.Temperament)) throw new ArgumentException("Temperament es requerido.");
         if (string.IsNullOrWhiteSpace(request.Story)) throw new ArgumentException("Story es requerido.");
-        ValidatePhotoFiles(photos);
+        ValidatePhotoFiles(request.Photos);
 
         var pet = new Pet(
             request.Name,
@@ -86,12 +86,12 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         _dbContext.Pets.Add(pet);
         await _dbContext.SaveChangesAsync();
 
-        if (photos != null && photos.Count > 0)
+        if (request.Photos != null && request.Photos.Count > 0)
         {
             var urls = new List<string>();
-            for (int i = 0; i < photos.Count; i++)
+            for (int i = 0; i < request.Photos.Count; i++)
             {
-                var url = await _storageService.UploadPetPhotoAsync(photos[i], pet.Id, i + 1);
+                var url = await _storageService.UploadPetPhotoAsync(request.Photos[i], pet.Id, i + 1);
                 urls.Add(url);
             }
             pet.Photos = urls;
@@ -101,7 +101,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         return ToResponse(pet);
     }
 
-    public async Task<CreatePetResponse?> GetPetByIdAsync(Guid petId, string? requesterUserId = null)
+    public async Task<PetResponse?> GetPetByIdAsync(Guid petId, string? requesterUserId = null)
     {
         var pet = await _dbContext.Pets.FindAsync(petId);
         if (pet == null) return null;
@@ -131,9 +131,9 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
     }
 
     // Overload legacy sin userId para compatibilidad
-    public Task<CreatePetResponse?> GetPetByIdAsync(Guid petId) => GetPetByIdAsync(petId, null);
+    public Task<PetResponse?> GetPetByIdAsync(Guid petId) => GetPetByIdAsync(petId, null);
 
-    public async Task<PagedResponse<CreatePetResponse>> GetAllPetsAsync(int page, int pageSize, string? requesterUserId = null)
+    public async Task<PagedResponse<PetResponse>> GetAllPetsAsync(int page, int pageSize, string? requesterUserId = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 50);
@@ -180,7 +180,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        return new PagedResponse<CreatePetResponse>(
+        return new PagedResponse<PetResponse>(
             items.Select(ToResponse),
             page,
             pageSize,
@@ -189,7 +189,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         );
     }
 
-    public async Task<CreatePetResponse?> UpdatePetAsync(Guid petId, UpdatePetRequest request, string userId)
+    public async Task<PetResponse?> UpdatePetAsync(Guid petId, UpdatePetRequest request, string userId)
     {
         var user = await GetUserOrThrowAsync(userId);
         if (!await IsShelterOwnerOrDevAsync(user))
@@ -233,7 +233,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         return ToResponse(pet);
     }
 
-    public async Task<CreatePetResponse?> UpdatePetPhotoAsync(Guid petId, int photoIndex, IFormFile photo, string userId)
+    public async Task<PetResponse?> UpdatePetPhotoAsync(Guid petId, int photoIndex, IFormFile photo, string userId)
     {
         if (photoIndex < 1 || photoIndex > 3) throw new ArgumentException("PhotoIndex debe ser 1, 2 o 3.");
         ValidatePhotoFiles([photo]);

@@ -1,7 +1,7 @@
 using PatitasAPI.Core.Utils;
 namespace PatitasAPI.Core.DTOs;
 
-public record CreatePetResponse(
+public record PetResponse(
     Guid Id,
     string Name,
     Species Specie,
@@ -21,7 +21,8 @@ public record CreatePetRequest(
     Gender Gender,
     string Temperament,
     string Story,
-    bool? Available = false
+    bool? Available = false,
+    List<IFormFile>? Photos = null
 );
 
 public record UpdatePetRequest(

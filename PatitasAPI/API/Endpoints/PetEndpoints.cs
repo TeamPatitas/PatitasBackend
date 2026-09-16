@@ -11,23 +11,13 @@ public static class PetEndpoints
     {
         var group = app.MapGroup("/pet").WithTags("Mascotas");
 
-        group.MapPost("/", async (
-            [FromForm] string Name,
-            [FromForm] Species Species,
-            [FromForm] string Breed,
-            [FromForm] Gender Gender,
-            [FromForm] string Temperament,
-            [FromForm] string Story,
-            [FromForm] bool? Available,
-            [FromForm] List<IFormFile>? Photos,
-            ClaimsPrincipal user, IPetService petService) =>
+        group.MapPost("/", async ([FromForm] CreatePetRequest request, ClaimsPrincipal user, IPetService petService) =>
         {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return Results.Unauthorized();
             try
             {
-                var request = new CreatePetRequest(Name, Species, Breed, Gender, Temperament, Story, Available);
-                var created = await petService.CreatePetAsync(request, Photos, userId);
+                var created = await petService.CreatePetAsync(request, userId);
                 return Results.Created($"/pet/{created.Id}", created);
             }
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
