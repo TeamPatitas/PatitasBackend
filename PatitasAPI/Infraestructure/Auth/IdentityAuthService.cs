@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PatitasAPI.Core.DTOs;
@@ -12,10 +13,11 @@ using PatitasAPI.Infraestructure.Data;
 
 namespace PatitasAPI.Infraestructure.Auth;
 
-public class IdentityAuthService(UserManager<AppUser> userManager, IStorageService storageService, PatitasDbContext dbContext) : IAuthService
+public class IdentityAuthService(UserManager<AppUser> userManager, IStorageService storageService, IEmailService emailService, PatitasDbContext dbContext) : IAuthService
 {
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly IStorageService _storageService = storageService;
+    private readonly IEmailService _emailService = emailService;
     private readonly PatitasDbContext _dbContext = dbContext;
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
@@ -70,6 +72,8 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
 
         var token = await GenerateJwt(user);
         var roles = await _userManager.GetRolesAsync(user);
+
+        await SendEmailVerificationAsync(Guid.Parse(user.Id));
 
         return new AuthResponse
         {
@@ -155,6 +159,72 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
         };
     }
 
+    public async Task SendEmailVerificationAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString()) ?? throw new Exception("Usuario no encontrado");
+        
+        if (user.EmailConfirmed) throw new Exception("El correo ya ha sido verificado");
+
+        var emailRawToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedTokenBytes = Encoding.UTF8.GetBytes(emailRawToken);
+        var safeToken = WebEncoders.Base64UrlEncode(encodedTokenBytes);
+        var api_url = PatitasEnv.GetEnvVariable("API_BASE_URL");
+        var verificationLink = $"{api_url}/auth/verify-email?userId={user.Id}&token={safeToken}";
+
+        if(PatitasEnv.IsDev()) {
+            Console.WriteLine("\n=======================================================");
+            Console.WriteLine($"📧 NUEVO REGISTRO: {user.Email}");
+            Console.WriteLine($"🔗 LINK DE VERIFICACIÓN:");
+            Console.WriteLine(verificationLink);
+            Console.WriteLine("=======================================================\n");
+        } else {
+            string[] images = [
+                "https://i.pinimg.com/736x/eb/0b/19/eb0b19a194ac9c38f5245c8f4de14ef8.jpg",
+                "https://i.pinimg.com/736x/90/87/94/908794de8979891aac4e0db92e4a4a94.jpg",
+                "https://i.pinimg.com/736x/1c/f7/09/1cf70991823f65623bd192ea7dbc813a.jpg",
+                "https://i.pinimg.com/736x/8f/a9/e5/8fa9e5031d7e8bac8b410993278e21f7.jpg",
+                "https://i.pinimg.com/736x/18/d5/c6/18d5c64d2bfb606540294f5c1e57b20d.jpg",
+                "https://i.pinimg.com/736x/1d/56/23/1d5623374310648a333757b264c43623.jpg",
+                "https://i.pinimg.com/736x/bb/f9/de/bbf9de946d694708b9140ea5fc278bfa.jpg",
+                "https://i.pinimg.com/1200x/6b/3e/27/6b3e2732f2d45ee33e45f5349051232c.jpg"
+            ];
+
+            var emailBody = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>
+                    <h2 style='color: #4CAF50;'>¡Bienvenido a Patitas al Rescate! 🐾</h2>
+                    <p>Hola,</p>
+                    <p>Gracias por unirte a nuestra plataforma. Para poder iniciar sesión y empezar a adoptar a los perritos, necesitamos verificar tu correo.</p>
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='{verificationLink}' style='background-color: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>
+                            Verificar mi cuenta
+                        </a>
+                    </div>
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <img style='width: 200px; border-radius: 20px;' src='{images[new Random().Next(images.Length)]}' alt='Imagen de bienvenida' />
+                    </div>
+                    <p style='color: #777; font-size: 12px;'>Si el botón no funciona, copia y pega este enlace en tu navegador:<br>{verificationLink}</p>
+                </div>
+            ";
+
+            await _emailService.SendEmailAsync(
+                email: user.Email!,
+                subject: "Verifica tu cuenta - Patitas al Rescate",
+                htmlBody: emailBody
+            );
+        }
+    }
+
+    public async Task VerifyEmailAsync(Guid userId, string token)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) throw new Exception("Usuario no encontrado");
+        var decodedTokenBytes = WebEncoders.Base64UrlDecode(token);
+        var originalToken = Encoding.UTF8.GetString(decodedTokenBytes);
+        var result = await _userManager.ConfirmEmailAsync(user, originalToken);
+        if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+    }
+
+    // Private
     private async Task<string> GenerateJwt(AppUser user)
     {
         var jwtKey = PatitasEnv.GetEnvVariable("JWT_SECRET_KEY");

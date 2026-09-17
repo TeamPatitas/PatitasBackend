@@ -21,7 +21,7 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("GetCurrentUser").RequireAuthorization("User").WithTags("Authentication");
+        }).WithName("GetCurrentUser").RequireAuthorization("User");
 
         app.MapPatch("/user", async ([FromForm] UpdateUserRequest request, ClaimsPrincipal user, IAuthService authService) =>
         {
@@ -36,7 +36,7 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("UpdateCurrentUser").RequireAuthorization("User").WithTags("Authentication").DisableAntiforgery();
+        }).WithName("UpdateCurrentUser").RequireAuthorization("User").DisableAntiforgery();
 
         // Auth
         var group = app.MapGroup("/auth").WithTags("Authentication");
@@ -67,5 +67,31 @@ public static class AuthEndpoints
             }
         }).WithName("Registrarse").DisableAntiforgery();
 
+        group.MapGet("/verify-email", async (Guid userId, string token, IAuthService authService) => {
+            try
+            {
+                await authService.VerifyEmailAsync(userId, token);
+                return Results.Ok("Correo verificado correctamente");
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        }).WithName("Verificar Correo");
+
+        group.MapGet("/send-verification-email", async (IAuthService authService, ClaimsPrincipal user) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Results.Unauthorized();
+            try
+            {
+                await authService.SendEmailVerificationAsync(Guid.Parse(userId));
+                return Results.Ok("Correo de verificación enviado correctamente");
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        }).WithName("Enviar Correo de Verificación").RequireAuthorization("User").RequireRateLimiting("EmailVerificationCooldown");
     }
 }

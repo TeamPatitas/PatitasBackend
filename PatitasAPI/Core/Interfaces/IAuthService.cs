@@ -7,4 +7,6 @@ public interface IAuthService
     Task<AuthResponse> RegisterAsync(RegisterRequest request);
     Task<UserResponse> GetUserAsync(Guid userId);
     Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest request);
+    Task SendEmailVerificationAsync(Guid userId);
+    Task VerifyEmailAsync(Guid userId, string token);
 }

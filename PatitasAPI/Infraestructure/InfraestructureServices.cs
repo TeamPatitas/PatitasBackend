@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,34 @@ public static class InfraestructureServices
                 ClockSkew = TimeSpan.Zero,
                 ValidateIssuer = false,
                 ValidateAudience = false
+            };
+        });
+
+        //Cooldowns
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy("EmailVerificationCooldown", httpContext => {
+                var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: clientIp, 
+                    factory: partition => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 1, 
+                        Window = TimeSpan.FromMinutes(1), 
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }
+                );
+            });
+
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    new { error = "Espera 1 minuto antes de volver a solicitar la verificación." }, 
+                    cancellationToken);
             };
         });
 
