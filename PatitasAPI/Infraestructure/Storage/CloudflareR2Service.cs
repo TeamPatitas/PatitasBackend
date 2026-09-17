@@ -12,7 +12,7 @@ public class CloudflareR2Service : IStorageService
     private readonly string _bucketName;
     private readonly string _publicUrl;
 
-    public CloudflareR2Service()
+    public CloudflareR2Service() 
     {
         var accessKey = PatitasEnv.GetEnvVariable("R2_ACCESS_KEY_ID");
         var secretKey = PatitasEnv.GetEnvVariable("R2_SECRET_ACCESS_KEY");
@@ -61,7 +61,7 @@ public class CloudflareR2Service : IStorageService
     private static async Task<MemoryStream> ConvertToWebpAsync(IFormFile file)
     {
         using var inputStream = file.OpenReadStream();
-        using var image = await SixLabors.ImageSharp.Image.LoadAsync(inputStream);
+        using var image = await Image.LoadAsync(inputStream);
 
         // Resize max 1024x1024 manteniendo aspecto
         const int maxSize = 1024;

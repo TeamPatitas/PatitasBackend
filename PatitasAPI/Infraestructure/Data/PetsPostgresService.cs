@@ -13,18 +13,19 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly IStorageService _storageService = storageService;
 
-    private static PetResponse ToResponse(Pet pet) => new(
-        pet.Id,
-        pet.Name,
-        pet.Species,
-        pet.Breed,
-        pet.Gender,
-        pet.Temperament,
-        pet.Story,
-        pet.Photos,
-        pet.Available,
-        pet.ShelterId
-    );
+    private static PetResponse ToResponse(Pet pet) => new PetResponse
+    {
+        Id = pet.Id,
+        Name = pet.Name,
+        Specie = pet.Species,
+        Breed = pet.Breed,
+        Gender = pet.Gender,
+        Temperament = pet.Temperament,
+        Story = pet.Story,
+        Photos = pet.Photos,
+        Available = pet.Available,
+        ShelterId = pet.ShelterId
+    };
 
     private static void ValidatePhotoFiles(List<IFormFile>? photos)
     {
@@ -106,7 +107,6 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         var pet = await _dbContext.Pets.FindAsync(petId);
         if (pet == null) return null;
 
-        // Si no hay usuario (llamada interna legacy) retorna directo
         if (requesterUserId == null) return ToResponse(pet);
 
         var requester = await _userManager.FindByIdAsync(requesterUserId);
@@ -114,14 +114,11 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
 
         var isOwnerOrDev = await IsShelterOwnerOrDevAsync(requester);
 
-        // User sin privilegios: oculta no disponibles
         if (!isOwnerOrDev && !pet.Available)
             return null;
 
-        // ShelterOwner solo ve sus propias mascotas si no están disponibles? Permitir ver si es de su shelter, sino 404 para ocultar de otros shelters
         if (isOwnerOrDev && !pet.Available)
         {
-            // Si es Dev puede ver todo
             var isDev = await _userManager.IsInRoleAsync(requester, "Dev");
             if (!isDev && requester.ShelterId != pet.ShelterId)
                 return null;
@@ -130,7 +127,6 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         return ToResponse(pet);
     }
 
-    // Overload legacy sin userId para compatibilidad
     public Task<PetResponse?> GetPetByIdAsync(Guid petId) => GetPetByIdAsync(petId, null);
 
     public async Task<PagedResponse<PetResponse>> GetAllPetsAsync(int page, int pageSize, string? requesterUserId = null)
@@ -155,13 +151,11 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
                     var isDev = await _userManager.IsInRoleAsync(requester, "Dev");
                     if (!isDev)
                     {
-                        // ShelterOwner solo ve sus mascotas (incluye no disponibles)
                         if (requester.ShelterId != null)
                             query = query.Where(p => p.ShelterId == requester.ShelterId);
                         else
                             query = query.Where(p => p.Available);
                     }
-                    // Dev ve todo (incluye no disponibles de todos los shelters)
                 }
             }
             else
@@ -180,13 +174,14 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        return new PagedResponse<PetResponse>(
-            items.Select(ToResponse),
-            page,
-            pageSize,
-            totalCount,
-            totalPages
-        );
+        return new PagedResponse<PetResponse>
+        {
+            Items = items.Select(ToResponse),
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
     }
 
     public async Task<PetResponse?> UpdatePetAsync(Guid petId, UpdatePetRequest request, string userId)
@@ -256,10 +251,8 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         var photos = pet.Photos.ToList();
         while (photos.Count < photoIndex) photos.Add("");
         photos[photoIndex - 1] = url;
-        // Trim trailing empty
         photos = photos.Where((p, idx) => !string.IsNullOrEmpty(p) || idx < photos.FindLastIndex(x => !string.IsNullOrEmpty(x)) + 1).ToList();
         pet.Photos = photos.Where(p => !string.IsNullOrEmpty(p)).ToList();
-        // Ensure max 3
         if (pet.Photos.Count > 3) pet.Photos = pet.Photos.Take(3).ToList();
 
         await _dbContext.SaveChangesAsync();
@@ -281,7 +274,6 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (!isDev && pet.ShelterId != user.ShelterId)
             throw new UnauthorizedAccessException("No puedes borrar mascotas de otro refugio.");
 
-        // Hard delete en cascada: Adoptions y Favorites se borran por Cascade configurado en PatitasDbContext
         _dbContext.Pets.Remove(pet);
         await _dbContext.SaveChangesAsync();
         return true;

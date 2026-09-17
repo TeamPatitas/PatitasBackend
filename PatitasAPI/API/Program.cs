@@ -40,6 +40,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+var baseUrl = PatitasEnv.GetEnvVariable("API_BASE_URL");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -70,4 +71,8 @@ app.MapAllEndpoints();
 app.MapGet("/", () => "Hola pez, PatitasAPI made with ❤️ by GM4 & PatitasTeam");
 app.UseAuthorization();
 app.MapControllers();
+
+if(app.Environment.IsDevelopment()) app.Logger.LogInformation($"Swagger UI: {baseUrl}/swagger");
+app.Logger.LogInformation($"Patitas API en linea :D {baseUrl}/");
+
 app.Run();

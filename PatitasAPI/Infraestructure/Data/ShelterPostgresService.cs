@@ -12,15 +12,16 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly IStorageService _storageService = storageService;
 
-    private static ShelterResponse ToResponse(Shelter shelter) => new(
-        shelter.Id,
-        shelter.Name,
-        shelter.Address,
-        shelter.IsAvailable,
-        shelter.Latitude,
-        shelter.Longitude,
-        shelter.PhotoUrl
-    );
+    private static ShelterResponse ToResponse(Shelter shelter) => new ShelterResponse
+    {
+        Id = shelter.Id,
+        Name = shelter.Name,
+        Address = shelter.Address,
+        IsAvailable = shelter.IsAvailable,
+        Latitude = shelter.Latitude,
+        Longitude = shelter.Longitude,
+        PhotoUrl = shelter.PhotoUrl
+    };
 
     public async Task<ShelterResponse> CreateShelterAsync(CreateShelterRequest req, string userId)
     {
@@ -112,13 +113,14 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        return new PagedResponse<ShelterResponse>(
-            items.Select(ToResponse),
-            page,
-            pageSize,
-            totalCount,
-            totalPages
-        );
+        return new PagedResponse<ShelterResponse>
+        {
+            Items = items.Select(ToResponse),
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
     }
 
     public async Task<ShelterResponse?> GetByIdAsync(Guid shelterId, string? requesterUserId = null)

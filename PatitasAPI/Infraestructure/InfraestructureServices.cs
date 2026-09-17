@@ -7,6 +7,7 @@ using PatitasAPI.Core.Entities;
 using PatitasAPI.Core.Interfaces;
 using PatitasAPI.Infraestructure.Auth;
 using PatitasAPI.Infraestructure.Data;
+using PatitasAPI.Infraestructure.Email;
 using PatitasAPI.Infraestructure.Storage;
 
 namespace PatitasAPI.Infraestructure;
@@ -51,6 +52,9 @@ public static class InfraestructureServices
 
         //R3 Storage
         services.AddScoped<IStorageService, CloudflareR2Service>();
+
+        //Email Service
+        services.AddHttpClient<IEmailService, ResendEmailService>();
 
         // Scoped Services
         services.AddScoped<IAuthService, IdentityAuthService>();
