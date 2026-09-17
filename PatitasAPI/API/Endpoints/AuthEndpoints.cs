@@ -1,11 +1,4 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PatitasAPI.Core.DTOs;
-using PatitasAPI.Core.Entities;
-using PatitasAPI.Core.Interfaces;
-using PatitasAPI.Infraestructure.Data;
 namespace PatitasAPI.API.Endpoints;
 
 public static class AuthEndpoints
