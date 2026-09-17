@@ -1,4 +1,11 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using PatitasAPI.Core.DTOs;
+using PatitasAPI.Core.Entities;
+using PatitasAPI.Core.Interfaces;
+using PatitasAPI.Infraestructure.Data;
 namespace PatitasAPI.API.Endpoints;
 
 public static class AuthEndpoints
@@ -116,5 +123,6 @@ public static class AuthEndpoints
                 return Results.BadRequest(new { message = ex.Message });
             }
         }).WithName("Registrarse").DisableAntiforgery();
+
     }
 }
