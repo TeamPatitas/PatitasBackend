@@ -11,17 +11,19 @@ public static class PatitasEnv
         var requiredVariables = new List<string>
         {
             "AUTH_DEFAULT_PASSWORD",
+            "API_BASE_URL",
             "JWT_SECRET_KEY",
             "POSTGRES_DB",
             "POSTGRES_USER",
             "POSTGRES_PASSWORD",
             "POSTGRES_PORT",
-            "SERVICE_IP",
+            "POSTGRES_IP",
             "R2_ACCOUNT_ID",
             "R2_ACCESS_KEY_ID",
             "R2_SECRET_ACCESS_KEY",
             "R2_BUCKET_NAME",
-            "R2_PUBLIC_URL"
+            "R2_PUBLIC_URL",
+            "RESEND_API_KEY"
         };
 
         foreach (var variable in requiredVariables)
@@ -49,7 +51,7 @@ public static class PatitasEnv
         var dbUser = GetEnvVariable("POSTGRES_USER");
         var dbPassword = GetEnvVariable("POSTGRES_PASSWORD");
         var dbPort = GetEnvVariable("POSTGRES_PORT");
-        var dbHost = GetEnvVariable("SERVICE_IP"); 
+        var dbHost = GetEnvVariable("POSTGRES_IP"); 
 
         return $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
     }
