@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PatitasAPI.Core.DTOs;
@@ -49,7 +50,7 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
             UserName = request.Email,
             BirthDate = request.BirthDate,
             Gender = (Gender)request.Gender
-        };
+        };       
 
         var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded) throw new Exception("Error al crear el usuario: " + string.Join(", ", result.Errors.Select(e => e.Description)));
@@ -66,6 +67,17 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
 
         var token = await GenerateJwt(user);
         var roles = await _userManager.GetRolesAsync(user);
+
+        var emailRawToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedTokenBytes = Encoding.UTF8.GetBytes(emailRawToken);
+        var safeToken = WebEncoders.Base64UrlEncode(encodedTokenBytes);
+
+        if(PatitasEnv.IsDev()) {
+            var verificationLink = $"https://localhost:5000/verify-email?userId={user.Id}&token={safeToken}";
+            Console.WriteLine($"Verification link: {verificationLink}");
+        } else {
+            // TODO: Una wea con servicio real
+        }
 
         return new AuthResponse(token, [.. roles]);
     }
