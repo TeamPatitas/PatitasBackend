@@ -195,7 +195,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (!await IsShelterOwnerOrDevAsync(user))
             throw new UnauthorizedAccessException("Se requiere rol ShelterOwner.");
         if (user.ShelterId == null)
-            throw new InvalidOperationException("No Shelter associated with your user");
+            throw new InvalidOperationException("No existe Shelter asociado a tu usuario.");
 
         var pet = await _dbContext.Pets.FindAsync(petId);
         if (pet == null) return null;
@@ -242,7 +242,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (!await IsShelterOwnerOrDevAsync(user))
             throw new UnauthorizedAccessException("Se requiere rol ShelterOwner.");
         if (user.ShelterId == null)
-            throw new InvalidOperationException("No Shelter associated with your user");
+            throw new InvalidOperationException("No existe Shelter asociado a tu usuario.");
 
         var pet = await _dbContext.Pets.FindAsync(petId);
         if (pet == null) return null;
@@ -272,7 +272,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (!await IsShelterOwnerOrDevAsync(user))
             throw new UnauthorizedAccessException("Se requiere rol ShelterOwner.");
         if (user.ShelterId == null)
-            throw new InvalidOperationException("No Shelter associated with your user");
+            throw new InvalidOperationException("No existe Shelter asociado a tu usuario.");
 
         var pet = await _dbContext.Pets.FindAsync(petId);
         if (pet == null) return false;

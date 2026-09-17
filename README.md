@@ -54,20 +54,20 @@ curl -X POST http://localhost:5000/auth/login \
 
 ### POST `/auth/register`
 
-`gender`: Ver [Enums](#enums).
+- `gender`: Ver [Enums](#enums). 
+- `Photo` opcional `IFormFile` → `users/{id}.webp` (`Max 10MB`, `jpeg/png/webp`).
 
 **curl Request**:
 ```bash
 curl -X POST http://localhost:5000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Maria",
-    "lastName": "Adoptante",
-    "email": "maria@test.com",
-    "password": "P@ssw0rd!",
-    "birthDate": "2005-01-01",
-    "gender": 1
-  }'
+  -H "Authorization: Bearer $TOKEN" \
+  -F "FirstName=Maria" \
+  -F "LastName=Adoptante" \
+  -F "Email=maria@test.com" \
+  -F "Password=P@ssw0rd!" \
+  -F "BirthDate=2005-01-01" \
+  -F "Gender=1" \
+  -F "Photo=@avatar.jpg"
 ```
 
 **Response 200**:
@@ -83,32 +83,73 @@ curl -X POST http://localhost:5000/auth/register \
 * **Algoritmo**: `HmacSha256` con `JWT_SECRET_KEY`.
 * **Claims**: `sub=user.Id`, `email`, `jti=guid`, `Role=primer rol`.
 * **Duración**: **20 días** (`Expires = UtcNow + 20 días`).
-* **Validación**: `ValidateIssuerSigningKey=true`, `ValidateLifetime=true`, `ClockSkew=Zero`, `ValidateIssuer=false`, `ValidateAudience=false`.
+* **Validación**: 
+```
+  ValidateIssuerSigningKey=true, 
+  ValidateLifetime=true, 
+  ClockSkew=Zero, 
+  ValidateIssuer=false, 
+  ValidateAudience=false.
+```
 * **Uso**: `Authorization: Bearer <token>` en cada request protegida.
 
----
+## Usuario
 
-## Enums
+### GET `/user`
 
-```csharp
-public enum Species
+Obtiene perfil actual. Dominio base `/user`.
+
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
+
+**curl Request**:
+```bash
+curl http://localhost:5000/user \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200**:
+```json
 {
-    OTHER, // 0
-    DOG,   // 1
-    CAT    // 2
+  "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+  "firstName": "Maria",
+  "lastName": "Adoptante",
+  "email": "maria@test.com",
+  "isEmailConfirmed": true,
+  "gender": 1,
+  "photoUrl": "https://r2.example.com/users/a1b2c3d4.webp",
+  "birthDate": "2005-01-01",
+  "role": "User",
+  "shelterId": null
 }
+```
 
-public enum Gender
-{
-    MALE,   // 0
-    FEMALE  // 1
-}
+### PATCH `/user`
 
-public enum AdoptionStatus
+Actualiza perfil. `Photo` opcional `users/{id}.webp` (si `Photo != null` reemplaza, `10MB`, `webp Q75 1024px`). Resto campos opcionales `FirstName`, `LastName`, `BirthDate`, `Gender` (Ver [Enums](#enums)).
+
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
+
+**curl Request**:
+```bash
+curl -X PATCH http://localhost:5000/user \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "FirstName=Maria" \
+  -F "Photo=@avatar-new.jpg"
+```
+
+**Response 200**:
+```json
 {
-    REQUESTED, // 0
-    APPROVED,  // 1
-    REJECTED   // 2
+  "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+  "firstName": "Maria",
+  "lastName": "Adoptante",
+  "email": "maria@test.com",
+  "isEmailConfirmed": true,
+  "gender": 1,
+  "photoUrl": "https://r2.example.com/users/a1b2c3d4.webp",
+  "birthDate": "2005-01-01",
+  "role": "User",
+  "shelterId": null
 }
 ```
 
@@ -118,11 +159,11 @@ public enum AdoptionStatus
 
 Grupo `/pet` — Tag `Mascotas`.
 
-Ver [Enums](#enums) para `Species` y `Gender`.
+Ver [Enums](#enums) para `Species` y `Gender`. Imágenes R2 `CloudflareR2Service`: `pets/{petId}/{petId}-{n}.webp` `n=1..3`, `max 3`, `10MB` c/u, `jpeg/png/webp` → `webp Q75` `1024px`.
 
 ### POST `/pet`
 
-Crea mascota.
+Crea mascota. `[FromForm] CreatePetRequest` con `Photos` opcional.
 
 * **Rol**: Requiere `ShelterOwner` o `Dev`.
 * **Shelter**: infiere `ShelterId` del usuario autenticado vía JWT.
@@ -131,20 +172,15 @@ Crea mascota.
 ```bash
 curl -X POST http://localhost:5000/pet/ \
   -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Firulais",
-    "species": 1,
-    "breed": "Labrador",
-    "gender": 0,
-    "temperament": "Juguetón",
-    "story": "Rescatado en...",
-    "photos": [
-      "https://cdn.example.com/firulais1.jpg",
-      "https://cdn.example.com/firulais2.jpg"
-    ],
-    "available": true
-  }'
+  -F "Name=Firulais" \
+  -F "Species=1" \
+  -F "Breed=Labrador" \
+  -F "Gender=0" \
+  -F "Temperament=Juguetón" \
+  -F "Story=Rescatado en..." \
+  -F "Available=true" \
+  -F "Photos=@firulais1.jpg" \
+  -F "Photos=@firulais2.jpg"
 ```
 
 **Response 201**:
@@ -157,7 +193,10 @@ curl -X POST http://localhost:5000/pet/ \
   "gender": 0,
   "temperament": "Juguetón",
   "story": "Rescatado en...",
-  "photos": ["https://cdn.example.com/firulais1.jpg","https://cdn.example.com/firulais2.jpg"],
+  "photos": [
+    "https://r2.example.com/pets/550e8400/pets-550e8400-1.webp",
+    "https://r2.example.com/pets/550e8400/pets-550e8400-2.webp"
+  ],
   "available": true,
   "shelterId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
 }
@@ -189,7 +228,7 @@ curl "http://localhost:5000/pet?page=1&pageSize=20" \
       "gender": 0,
       "temperament": "Juguetón",
       "story": "Rescatado en...",
-      "photos": ["https://cdn.example.com/firulais1.jpg"],
+      "photos": ["https://r2.example.com/pets/550e8400/pets-550e8400-1.webp"],
       "available": true,
       "shelterId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
     }
@@ -224,7 +263,7 @@ curl http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
   "gender": 0,
   "temperament": "Juguetón",
   "story": "Rescatado en...",
-  "photos": ["https://cdn.example.com/firulais1.jpg"],
+  "photos": ["https://r2.example.com/pets/550e8400/pets-550e8400-1.webp"],
   "available": true,
   "shelterId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
 }
@@ -232,7 +271,7 @@ curl http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
 
 ### PATCH `/pet/{petId}`
 
-Actualización parcial.
+Actualización parcial (sin fotos).
 
 * **Rol**: Requiere `ShelterOwner` o `Dev` (solo su shelter, `Dev` bypass).
 
@@ -242,8 +281,7 @@ curl -X PATCH http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "available": false,
-    "photos": ["https://cdn.example.com/new.jpg"]
+    "available": false
   }'
 ```
 
@@ -257,8 +295,40 @@ curl -X PATCH http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
   "gender": 0,
   "temperament": "Juguetón",
   "story": "Rescatado en...",
-  "photos": ["https://cdn.example.com/new.jpg"],
+  "photos": ["https://r2.example.com/pets/550e8400/pets-550e8400-1.webp"],
   "available": false,
+  "shelterId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+}
+```
+
+### PATCH `/pet/{petId}/photo/{photoIndex}`
+
+Reemplaza foto `n=1..3` en `pets/{id}/{id}-{n}.webp` (overwrite `webp Q75`).
+
+* **Rol**: Requiere `ShelterOwner` o `Dev`.
+
+**curl Request**:
+```bash
+curl -X PATCH http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000/photo/1 \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "photo=@new1.jpg"
+```
+
+**Response 200**:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Firulais",
+  "specie": 1,
+  "breed": "Labrador",
+  "gender": 0,
+  "temperament": "Juguetón",
+  "story": "Rescatado en...",
+  "photos": [
+    "https://r2.example.com/pets/550e8400/pets-550e8400-1.webp",
+    "https://r2.example.com/pets/550e8400/pets-550e8400-2.webp"
+  ],
+  "available": true,
   "shelterId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
 }
 ```
@@ -268,7 +338,7 @@ curl -X PATCH http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
 Borrado físico en cascada.
 
 * **Rol**: Requiere `ShelterOwner` o `Dev` (solo su shelter, `Dev` bypass).
-* **Efecto**: hard delete — borra favoritos y adopciones asociados. **IRREVERSIBLE**.
+* **Efecto**: hard delete — borra favoritos y adopciones asociados. Irreversible.
 
 **curl Request**:
 ```bash
@@ -280,19 +350,224 @@ curl -X DELETE http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
 
 ---
 
+## Refugios
+
+Grupo `/shelter` — Tag `Refugios`. Foto perfil `shelters/{id}.webp` (`10MB`, `webp Q75`, `jpeg/png/webp`, opcional, `null` permitido, patch reemplaza).
+
+### POST `/shelter`
+
+Crea refugio y asigna `ShelterId` al creador. Límite 1 por usuario (`User` y `Dev`).
+
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
+
+**curl Request**:
+```bash
+curl -X POST http://localhost:5000/shelter/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "Name=Refugio Patitas" \
+  -F "Address=Calle 123" \
+  -F "Latitude=-34.6" \
+  -F "Longitude=-58.4" \
+  -F "Photo=@refugio.jpg"
+```
+
+**Response 201**:
+```json
+{
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "Refugio Patitas",
+  "address": "Calle 123",
+  "isAvailable": false,
+  "latitude": -34.6,
+  "longitude": -58.4,
+  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+}
+```
+
+### PATCH `/shelter/{id}`
+
+Actualiza datos y/o foto (`Photo` opcional `shelters/{id}.webp` si existe reemplaza).
+
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev` (owner o `Dev`).
+
+**curl Request**:
+```bash
+curl -X PATCH http://localhost:5000/shelter/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "Name=Refugio Actualizado" \
+  -F "Photo=@new-refugio.jpg"
+```
+
+**Response 200**:
+```json
+{
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "Refugio Actualizado",
+  "address": "Calle 123",
+  "isAvailable": true,
+  "latitude": -34.6,
+  "longitude": -58.4,
+  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+}
+```
+
+### PATCH `/shelter/enable/{id}`
+
+Habilita refugio (`IsAvailable=true`).
+
+* **Rol**: Requiere `Dev`.
+
+**curl Request**:
+```bash
+curl -X PATCH http://localhost:5000/shelter/enable/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200**:
+```json
+{
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "Refugio Patitas",
+  "address": "Calle 123",
+  "isAvailable": true,
+  "latitude": -34.6,
+  "longitude": -58.4,
+  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+}
+```
+`400 El refugio ya está habilitado` si ya `true`.
+
+### PATCH `/shelter/disable/{id}`
+
+Deshabilita refugio (`IsAvailable=false`).
+
+* **Rol**: Requiere `Dev`.
+
+**curl Request**:
+```bash
+curl -X PATCH http://localhost:5000/shelter/disable/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200**:
+```json
+{
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "Refugio Patitas",
+  "address": "Calle 123",
+  "isAvailable": false,
+  "latitude": -34.6,
+  "longitude": -58.4,
+  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+}
+```
+`400 El refugio ya está deshabilitado` si ya `false`.
+
+### GET `/shelter`
+
+Lista paginada.
+
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
+* **Query**: `?page=1&pageSize=20` — `page≥1`, `pageSize 1-50`, orden `Name ASC`.
+* **Filtrado**: Usuarios con rol `User, ShelterOwner` solo pueden ver los refugios con `IsAvailable=true`. Usuarios con rol`Dev` acceden a todo.
+
+**curl Request**:
+```bash
+curl "http://localhost:5000/shelter?page=1&pageSize=20" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200**:
+```json
+{
+  "items": [
+    {
+      "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+      "name": "Refugio Patitas",
+      "address": "Calle 123",
+      "isAvailable": true,
+      "latitude": -34.6,
+      "longitude": -58.4,
+      "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalCount": 5,
+  "totalPages": 1
+}
+```
+
+### GET `/shelter/{id}`
+
+Obtiene refugio por id.
+
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
+* **Visibilidad**: Si su atributo `IsAvailable=false` solo `Dev` puede acceder o dueño (`user.ShelterId == id`) del refugio, resto `404`.
+
+**curl Request**:
+```bash
+curl http://localhost:5000/shelter/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200**:
+```json
+{
+  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "name": "Refugio Patitas",
+  "address": "Calle 123",
+  "isAvailable": true,
+  "latitude": -34.6,
+  "longitude": -58.4,
+  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+}
+```
+
+## Enums
+
+```csharp
+public enum Species
+{
+    OTHER, // 0
+    DOG,   // 1
+    CAT    // 2
+}
+
+public enum Gender
+{
+    MALE,   // 0
+    FEMALE  // 1
+}
+
+public enum AdoptionStatus
+{
+    REQUESTED, // 0
+    APPROVED,  // 1
+    REJECTED   // 2
+}
+```
+
+
+---
+
 ## Errores comunes
 
 | Código | Mensaje / Causa |
 |--------|-----------------|
-| `400` | `Email already in use` |
-| `400` | `Invalid gender value. Use 0 for MALE or 1 for FEMALE.` |
-| `400` | `Invalid credentials` |
+| `400` | `Ese correo ya está en uso` |
+| `400` | `Valor de Género inválido. Use 0 para MASCULINO o 1 para FEMENINO.` |
+| `400` | `Credenciales inválidas` |
 | `401` | Sin `Authorization: Bearer` o token expirado (20 días) |
 | `403` | `Se requiere rol ShelterOwner.` |
 | `403` | `No puedes modificar/borrar mascotas de otro refugio.` |
-| `400` | `No Shelter associated with your user` |
-| `400` | `Máximo 5 imágenes por mascota.` |
-| `400` | `URL de foto inválida` / `URL debe ser http/https` |
+| `400` | `No existe Shelter asociado a tu usuario.` |
+| `400` | `Ya tienes un refugio registrado. Solo se permite uno por usuario.` |
+| `400` | `Máximo 3 imágenes por mascota.` |
+| `400` | `Archivo excede 10MB.` / `Archivo vacío.` |
+| `400` | `Tipo de imagen no permitido: ... Use jpeg/png/webp.` |
+| `400` | `PhotoIndex debe ser 1, 2 o 3.` |
+| `400` | `El refugio ya está habilitado` / `El refugio ya está deshabilitado` |
 | `400` | `Name/Breed/Temperament/Story no puede estar vacío / máximo 100 caracteres` |
-| `404` | Pet no existe **o** oculto por `available=false` para `User`/otro shelter |
+| `404` | Pet/Shelter no existe **o** oculto por `available=false`/`IsAvailable=false` para `User`/otro shelter |
 | `204` | Borrado exitoso en cascada (sin body) |
