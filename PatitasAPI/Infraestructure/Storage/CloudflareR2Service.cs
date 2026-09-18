@@ -1,8 +1,7 @@
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using PatitasAPI.Core.Interfaces;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
+using SkiaSharp;
 
 namespace PatitasAPI.Infraestructure.Storage;
 
@@ -60,28 +59,36 @@ public class CloudflareR2Service : IStorageService
 
     private static async Task<MemoryStream> ConvertToWebpAsync(IFormFile file)
     {
-        using var inputStream = file.OpenReadStream();
-        using var image = await Image.LoadAsync(inputStream);
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
 
-        // Resize max 1024x1024 manteniendo aspecto
+        using var originalBitmap = SKBitmap.Decode(memoryStream);
+        SKBitmap bitmapToEncode = originalBitmap;
+
         const int maxSize = 1024;
-        if (image.Width > maxSize || image.Height > maxSize)
+        if (originalBitmap.Width > maxSize || originalBitmap.Height > maxSize)
         {
-            var ratio = Math.Min((double)maxSize / image.Width, (double)maxSize / image.Height);
-            var newWidth = (int)(image.Width * ratio);
-            var newHeight = (int)(image.Height * ratio);
-            image.Mutate(x => x.Resize(newWidth, newHeight));
+            var ratio = Math.Min((double)maxSize / originalBitmap.Width, (double)maxSize / originalBitmap.Height);
+            var newWidth = (int)(originalBitmap.Width * ratio);
+            var newHeight = (int)(originalBitmap.Height * ratio);
+
+            var newImageInfo = new SKImageInfo(newWidth, newHeight);
+            bitmapToEncode = originalBitmap.Resize(newImageInfo, new SKSamplingOptions(SKFilterMode.Linear));
         }
+        
+        using var image = SKImage.FromBitmap(bitmapToEncode);
+        using var data = image.Encode(SKEncodedImageFormat.Webp, 75);
 
         var webpStream = new MemoryStream();
-        var encoder = new SixLabors.ImageSharp.Formats.Webp.WebpEncoder
-        {
-            Quality = 75,
-            Method = SixLabors.ImageSharp.Formats.Webp.WebpEncodingMethod.Fastest,
-            FileFormat = SixLabors.ImageSharp.Formats.Webp.WebpFileFormatType.Lossy
-        };
-        await image.SaveAsWebpAsync(webpStream, encoder);
+        data.SaveTo(webpStream);
         webpStream.Position = 0;
+
+        if (bitmapToEncode != originalBitmap)
+        {
+            bitmapToEncode.Dispose();
+        }
+
         return webpStream;
     }
 }
