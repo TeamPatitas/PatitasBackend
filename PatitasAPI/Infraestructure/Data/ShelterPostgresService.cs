@@ -175,4 +175,19 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         await _context.SaveChangesAsync();
         return ToResponse(shelter);
     }
+
+    public async Task<bool> DeleteAsync(Guid shelterId, string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId) ?? throw new UnauthorizedAccessException("Usuario no encontrado");
+        var shelter = await _context.Shelters.FindAsync(shelterId);
+        if (shelter == null) return false;
+
+        var isDev = await _userManager.IsInRoleAsync(user, "Dev");
+        var isOwner = user.ShelterId == shelterId;
+        if (!isDev && !isOwner) throw new UnauthorizedAccessException("No puedes borrar este refugio");
+
+        _context.Shelters.Remove(shelter);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }

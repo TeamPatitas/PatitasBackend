@@ -32,7 +32,7 @@ public class PatitasDbContext(DbContextOptions<PatitasDbContext> options) : Iden
             entity.HasOne(p => p.Shelter)
                 .WithMany(s => s.Pets)
                 .HasForeignKey(p => p.ShelterId)
-                .OnDelete(DeleteBehavior.Restrict); // No c puede borrar un refugio si tiene mascotas asociadas
+                .OnDelete(DeleteBehavior.Cascade); // Borrado en cascada: si se borra el refugio se borran mascotas, adopciones y favoritos
         });
 
         builder.Entity<Event>(entity =>

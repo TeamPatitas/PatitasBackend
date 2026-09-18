@@ -75,5 +75,18 @@ public static class ShelterEndpoints
             if (result == null) return Results.NotFound();
             return Results.Ok(result);
         }).WithName("GetShelterById").RequireAuthorization("User");
+
+        group.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal user, IShelterService shelterService) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Results.Unauthorized();
+            try
+            {
+                var deleted = await shelterService.DeleteAsync(id, userId);
+                if (!deleted) return Results.NotFound(new { message = "Shelter not found" });
+                return Results.Ok("Refugio Borrado");
+            }
+            catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
+        }).WithName("DeleteShelter").RequireAuthorization("ShelterOwner");
     }
 }

@@ -10,4 +10,5 @@ public interface IShelterService
     Task<PagedResponse<ShelterResponse>> GetAllAsync(int page, int pageSize, string? requesterUserId = null);
     Task<ShelterResponse?> GetByIdAsync(Guid shelterId, string? requesterUserId = null);
     Task<ShelterResponse?> UpdateAsync(Guid shelterId, UpdateShelterRequest request, string userId);
+    Task<bool> DeleteAsync(Guid shelterId, string userId);
 }
