@@ -47,11 +47,11 @@ public static class PatitasEnv
 
     public static string GetDbConnection()
     {
-        var dbName = GetEnvVariable("POSTGRES_DB");
+        var dbName = GetEnvVariable("POSTGRES_DB_NAME");
         var dbUser = GetEnvVariable("POSTGRES_USER");
         var dbPassword = GetEnvVariable("POSTGRES_PASSWORD");
         var dbPort = GetEnvVariable("POSTGRES_PORT");
-        var dbHost = GetEnvVariable("POSTGRES_IP"); 
+        var dbHost = GetEnvVariable("POSTGRES_HOST"); 
 
         return $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
     }
