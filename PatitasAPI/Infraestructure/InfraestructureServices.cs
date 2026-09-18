@@ -9,6 +9,7 @@ using PatitasAPI.Core.Interfaces;
 using PatitasAPI.Infraestructure.Auth;
 using PatitasAPI.Infraestructure.Data;
 using PatitasAPI.Infraestructure.Email;
+using PatitasAPI.Infraestructure.Health;
 using PatitasAPI.Infraestructure.Storage;
 
 namespace PatitasAPI.Infraestructure;
@@ -89,6 +90,7 @@ public static class InfraestructureServices
         services.AddScoped<IAuthService, IdentityAuthService>();
         services.AddScoped<IPetService, PetsPostgresService>();
         services.AddScoped<IShelterService, ShelterPostgresService>();
+        services.AddScoped<IHealthService, HealthService>();
 
         return services;
     }

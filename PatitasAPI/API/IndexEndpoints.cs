@@ -8,6 +8,7 @@ public static class IndexEndpoints
         app.MapAuthEndpoints();
         app.MapPetEndpoints();
         app.MapShelterEndpoints();
+        app.MapHealthEndpoints();
 
         if(app.Environment.IsDevelopment())
         {
