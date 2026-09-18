@@ -78,6 +78,43 @@ curl -X POST http://localhost:5000/auth/register \
 }
 ```
 
+### POST `/auth/verify-email`
+
+Verifica email con token enviado por correo. `VerifyEmailRequest` con `UserId` y `Token` (token `Base64Url`).
+
+**curl Request**:
+```bash
+curl -X POST http://localhost:5000/auth/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+    "token": "CfDJ8..."
+  }'
+```
+
+**Response 200**:
+```json
+"Correo verificado correctamente"
+```
+
+### GET `/auth/send-verification-email`
+
+Reenvía correo de verificación. Cooldown 1 minuto por IP (`429`).
+
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
+
+**curl Request**:
+```bash
+curl http://localhost:5000/auth/send-verification-email \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200**:
+```json
+"Correo de verificación enviado correctamente"
+```
+`429` `{"error":"Espera 1 minuto antes de volver a solicitar la verificación."}`
+
 ### Tokens JWT
 
 * **Algoritmo**: `HmacSha256` con `JWT_SECRET_KEY`.
@@ -125,7 +162,9 @@ curl http://localhost:5000/user \
 
 ### PATCH `/user`
 
-Actualiza perfil. `Photo` opcional `users/{id}.webp` (si `Photo != null` reemplaza, `10MB`, `webp Q75 1024px`). Resto campos opcionales `FirstName`, `LastName`, `BirthDate`, `Gender` (Ver [Enums](#enums)).
+- Actualiza perfil.
+- Atributo `Photo` opcional `users/{id}.webp` (si ya tiene foto la nueva lo reemplaza, `Max 10MB`). 
+- Resto campos opcionales `FirstName`, `LastName`, `BirthDate`, `Gender` (Ver [Enums](#enums)).
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 
@@ -150,6 +189,55 @@ curl -X PATCH http://localhost:5000/user \
   "birthDate": "2005-01-01",
   "role": "User",
   "shelterId": null
+}
+```
+
+### DELETE `/user/{id}`
+
+- Borra la cuenta (Referencia 🗣️🗣️). 
+- Solo puede ejecutar el mismo usuario `id` o `Dev`. 
+- Rol DEV puede borrar a cualquier usuario.
+- Si tiene un refugio asignado (`ShelterId`) bloqueará y retornará error `400`
+- Si se borra todos sus Adopciones pasarán de `REQUESTED` → `CANCELLED`.
+
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
+
+**curl Request**:
+```bash
+curl -X DELETE http://localhost:5000/user/a1b2c3d4-e5f6-7890-1234-567890abcdef \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200**:
+```json
+"Usuario borrado"
+```
+`403` si no es propio ni `Dev`, `400` si tiene refugio.
+
+---
+
+## Enums
+
+```csharp
+public enum Species
+{
+    OTHER, // 0
+    DOG,   // 1
+    CAT    // 2
+}
+
+public enum Gender
+{
+    MALE,   // 0
+    FEMALE  // 1
+}
+
+public enum AdoptionStatus
+{
+    REQUESTED, // 0
+    APPROVED,  // 1
+    REJECTED,  // 2
+    CANCELLED  // 3
 }
 ```
 
@@ -204,7 +292,7 @@ curl -X POST http://localhost:5000/pet/ \
 
 ### GET `/pet`
 
-Lista paginada.
+Lista paginada resumida `PetSummaryResponse`.
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 * **Query**: `?page=1&pageSize=20` — `page≥1`, `pageSize 1-50`, orden `Name ASC`.
@@ -223,14 +311,8 @@ curl "http://localhost:5000/pet?page=1&pageSize=20" \
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "name": "Firulais",
-      "specie": 1,
-      "breed": "Labrador",
-      "gender": 0,
-      "temperament": "Juguetón",
-      "story": "Rescatado en...",
       "photos": ["https://r2.example.com/pets/550e8400/pets-550e8400-1.webp"],
-      "available": true,
-      "shelterId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+      "available": true
     }
   ],
   "page": 1,
@@ -242,7 +324,7 @@ curl "http://localhost:5000/pet?page=1&pageSize=20" \
 
 ### GET `/pet/{petId}`
 
-Obtiene una mascota.
+Obtiene una mascota detallada.
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 * **Visibilidad**: `User` ve `404` si `available=false`. `ShelterOwner` ve `false` solo si es su shelter; `Dev` ve todo.
@@ -469,7 +551,7 @@ Lista paginada.
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 * **Query**: `?page=1&pageSize=20` — `page≥1`, `pageSize 1-50`, orden `Name ASC`.
-* **Filtrado**: Usuarios con rol `User, ShelterOwner` solo pueden ver los refugios con `IsAvailable=true`. Usuarios con rol`Dev` acceden a todo.
+* **Filtrado**: `User/ShelterOwner` → solo `IsAvailable=true`. `Dev` → todo.
 
 **curl Request**:
 ```bash
@@ -503,7 +585,7 @@ curl "http://localhost:5000/shelter?page=1&pageSize=20" \
 Obtiene refugio por id.
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
-* **Visibilidad**: Si su atributo `IsAvailable=false` solo `Dev` puede acceder o dueño (`user.ShelterId == id`) del refugio, resto `404`.
+* **Visibilidad**: `IsAvailable=false` solo `Dev` o dueño (`user.ShelterId == id`), resto `404`.
 
 **curl Request**:
 ```bash
@@ -524,30 +606,53 @@ curl http://localhost:5000/shelter/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 \
 }
 ```
 
-## Enums
+### DELETE `/shelter/{id}`
 
-```csharp
-public enum Species
-{
-    OTHER, // 0
-    DOG,   // 1
-    CAT    // 2
-}
+Borra refugio en cascada (pets, events, adopciones, favoritos). Irreversible.
 
-public enum Gender
-{
-    MALE,   // 0
-    FEMALE  // 1
-}
+* **Rol**: Requiere `ShelterOwner` o `Dev` (owner o `Dev`), si no `403`.
 
-public enum AdoptionStatus
-{
-    REQUESTED, // 0
-    APPROVED,  // 1
-    REJECTED   // 2
-}
+**curl Request**:
+```bash
+curl -X DELETE http://localhost:5000/shelter/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
+**Response 200**:
+```json
+"Refugio Borrado"
+```
+`404` si no existe, `403` si no es dueño ni `Dev`.
+
+---
+
+## Health
+
+### GET `/health`
+
+Verifica servicios externos. Solo `Dev`.
+
+* **Rol**: Requiere `Dev`.
+
+**curl Request**:
+```bash
+curl http://localhost:5000/health \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200** (todo `UP`):
+```json
+{
+  "status": "UP",
+  "services": {
+    "database": { "status": "UP", "latencyMs": 12.3 },
+    "storage": { "status": "UP", "latencyMs": 45.6 },
+    "email": { "status": "UP", "latencyMs": 22.1 },
+    "api": { "status": "UP", "latencyMs": 0 }
+  }
+}
+```
+**Response 503** si algún `DOWN`, mantiene `services` con `error`.
 
 ---
 
@@ -568,6 +673,10 @@ public enum AdoptionStatus
 | `400` | `Tipo de imagen no permitido: ... Use jpeg/png/webp.` |
 | `400` | `PhotoIndex debe ser 1, 2 o 3.` |
 | `400` | `El refugio ya está habilitado` / `El refugio ya está deshabilitado` |
+| `400` | `No se puede borrar usuario con refugio asignado` |
+| `400` | `Usuario no encontrado` |
+| `400` | `El correo ya ha sido verificado` |
+| `429` | `Espera 1 minuto antes de volver a solicitar la verificación.` |
 | `400` | `Name/Breed/Temperament/Story no puede estar vacío / máximo 100 caracteres` |
-| `404` | Pet/Shelter no existe **o** oculto por `available=false`/`IsAvailable=false` para `User`/otro shelter |
+| `404` | Pet/Shelter/User no existe **o** oculto por `available=false`/`IsAvailable=false` para `User`/otro shelter |
 | `204` | Borrado exitoso en cascada (sin body) |
