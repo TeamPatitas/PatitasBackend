@@ -224,6 +224,37 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
         if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
     }
 
+    public async Task<bool> DeleteUserAsync(Guid targetUserId, Guid requesterUserId)
+    {
+        var targetUser = await _userManager.FindByIdAsync(targetUserId.ToString());
+        if (targetUser == null) return false;
+
+        var requesterUser = await _userManager.FindByIdAsync(requesterUserId.ToString());
+        if (requesterUser == null) throw new UnauthorizedAccessException("Solicitante no encontrado");
+
+        var isDev = await _userManager.IsInRoleAsync(requesterUser, "Dev");
+        var isSelf = targetUserId == requesterUserId;
+        if (!isSelf && !isDev)
+            throw new UnauthorizedAccessException("Solo puedes borrar tu propia cuenta o ser Dev");
+
+        if (targetUser.ShelterId != null)
+            throw new InvalidOperationException("No se puede borrar usuario con refugio asignado");
+
+        var pendingAdoptions = await _dbContext.Adoptions
+            .Where(a => a.AppUserId == targetUser.Id && a.Status == AdoptionStatus.REQUESTED)
+            .ToListAsync();
+        foreach (var ad in pendingAdoptions)
+        {
+            ad.Status = AdoptionStatus.CANCELLED;
+        }
+        if (pendingAdoptions.Count > 0)
+            await _dbContext.SaveChangesAsync();
+
+        var result = await _userManager.DeleteAsync(targetUser);
+        if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+        return true;
+    }
+
     // Private
     private async Task<string> GenerateJwt(AppUser user)
     {

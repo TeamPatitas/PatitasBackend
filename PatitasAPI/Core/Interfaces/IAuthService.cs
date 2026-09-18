@@ -9,4 +9,5 @@ public interface IAuthService
     Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest request);
     Task SendEmailVerificationAsync(Guid userId);
     Task VerifyEmailAsync(Guid userId, string token);
+    Task<bool> DeleteUserAsync(Guid targetUserId, Guid requesterUserId);
 }

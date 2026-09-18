@@ -16,5 +16,6 @@ public enum AdoptionStatus
 {
     REQUESTED,
     APPROVED,
-    REJECTED
+    REJECTED,
+    CANCELLED
 }
