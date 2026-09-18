@@ -14,8 +14,11 @@ RUN dotnet publish "PatitasAPI.csproj" -c Release -o /app/publish /p:UseAppHost=
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y curl && \
+    curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh
+
 EXPOSE 8080
 
 COPY --from=publish /app/publish .
 
-ENTRYPOINT ["dotnet", "PatitasAPI.dll"]
+ENTRYPOINT ["doppler", "run", "--", "dotnet", "PatitasAPI.dll"]
