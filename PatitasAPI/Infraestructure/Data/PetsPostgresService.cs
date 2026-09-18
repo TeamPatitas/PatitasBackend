@@ -27,6 +27,14 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         ShelterId = pet.ShelterId
     };
 
+    private static PetSummaryResponse ToSummaryResponse(Pet pet) => new PetSummaryResponse
+    {
+        Id = pet.Id,
+        Name = pet.Name,
+        Photos = pet.Photos,
+        Available = pet.Available
+    };
+
     private static void ValidatePhotoFiles(List<IFormFile>? photos)
     {
         if (photos == null) return;
@@ -129,7 +137,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
 
     public Task<PetResponse?> GetPetByIdAsync(Guid petId) => GetPetByIdAsync(petId, null);
 
-    public async Task<PagedResponse<PetResponse>> GetAllPetsAsync(int page, int pageSize, string? requesterUserId = null)
+    public async Task<PagedResponse<PetSummaryResponse>> GetAllPetsAsync(int page, int pageSize, string? requesterUserId = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 50);
@@ -174,9 +182,9 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        return new PagedResponse<PetResponse>
+        return new PagedResponse<PetSummaryResponse>
         {
-            Items = items.Select(ToResponse),
+            Items = items.Select(ToSummaryResponse),
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount,
