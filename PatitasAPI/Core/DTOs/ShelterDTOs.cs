@@ -9,6 +9,15 @@ public record ShelterResponse
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }
     public string? PhotoUrl { get; init; }
+    public required IEnumerable<Guid> Owners { get; init; }
+};
+
+public record ShelterSummaryResponse
+{
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
+    public required bool IsAvailable { get; init; }
+     public string? PhotoUrl { get; init; }
 };
 
 public record CreateShelterRequest

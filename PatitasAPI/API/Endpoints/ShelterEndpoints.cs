@@ -39,28 +39,6 @@ public static class ShelterEndpoints
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("UpdateShelter").RequireAuthorization("User").DisableAntiforgery();
 
-        group.MapPatch("/enable/{id:guid}", async (Guid id, IShelterService shelterService) =>
-        {
-            try
-            {
-                var result = await shelterService.EnableAsync(id);
-                if (result == null) return Results.NotFound(new { message = "Shelter not found" });
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("EnableShelter").RequireAuthorization("DevOnly");
-
-        group.MapPatch("/disable/{id:guid}", async (Guid id, IShelterService shelterService) =>
-        {
-            try
-            {
-                var result = await shelterService.DisableAsync(id);
-                if (result == null) return Results.NotFound(new { message = "Shelter not found" });
-                return Results.Ok(result);
-            }
-            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("DisableShelter").RequireAuthorization("DevOnly");
-
         group.MapGet("/", async (int? page, int? pageSize, ClaimsPrincipal user, IShelterService shelterService) =>
         {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);

@@ -19,5 +19,5 @@ public record HealthServiceResult
 public record HealthResponse
 {
     public required string Status { get; init; }
-    public required Dictionary<string, HealthServiceResult> Services { get; init; }
+    public required IDictionary<string, HealthServiceResult> Services { get; init; }
 };

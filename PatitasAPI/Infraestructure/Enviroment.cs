@@ -10,6 +10,7 @@ public static class PatitasEnv
 
         var requiredVariables = new List<string>
         {
+            "ASPNETCORE_ENVIRONMENT",
             "AUTH_DEFAULT_PASSWORD",
             "API_BASE_URL",
             "JWT_SECRET_KEY",
