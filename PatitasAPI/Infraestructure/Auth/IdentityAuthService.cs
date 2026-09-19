@@ -85,10 +85,8 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
 
     public async Task<UserResponse> GetUserAsync(Guid userId)
     {
-        var appUser = await _dbContext.Users.Include(u => u.Shelter).FirstOrDefaultAsync(u => u.Id == userId.ToString());
-        if (appUser == null) throw new Exception("Usuario no encontrado");
+        var appUser = await _dbContext.Users.Include(u => u.Shelter).FirstOrDefaultAsync(u => u.Id == userId.ToString()) ?? throw new Exception("Usuario no encontrado");
         var roles = await _userManager.GetRolesAsync(appUser);
-        var role = roles.FirstOrDefault() ?? "User";
         return new UserResponse
         {
             Id = appUser.Id,
@@ -99,16 +97,14 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
             Gender = (int)appUser.Gender,
             PhotoUrl = appUser.PhotoUrl ?? "",
             BirthDate = appUser.BirthDate,
-            Role = role,
+            Roles = roles,
             ShelterId = appUser.ShelterId
         };
     }
 
     public async Task<UserResponse> UpdateUserAsync(Guid userId, UpdateUserRequest request)
     {
-        var appUser = await _userManager.FindByIdAsync(userId.ToString());
-        if (appUser == null) throw new Exception("Usuario no encontrado");
-
+        var appUser = await _userManager.FindByIdAsync(userId.ToString()) ?? throw new Exception("Usuario no encontrado");
         if (request.FirstName != null)
         {
             if (string.IsNullOrWhiteSpace(request.FirstName)) throw new Exception("FirstName no puede estar vacío");
@@ -144,7 +140,6 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
         if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
 
         var roles = await _userManager.GetRolesAsync(appUser);
-        var role = roles.FirstOrDefault() ?? "User";
         return new UserResponse
         {
             Id = appUser.Id,
@@ -155,7 +150,7 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
             Gender = (int)appUser.Gender,
             PhotoUrl = appUser.PhotoUrl ?? "",
             BirthDate = appUser.BirthDate,
-            Role = role,
+            Roles = roles,
             ShelterId = appUser.ShelterId
         };
     }
@@ -275,10 +270,44 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
         foreach (var role in req.Roles)
         {
             if (!await _userManager.IsInRoleAsync(user, role))
-                throw new Exception($"El usuario no tiene ese rol: {role}");
+                throw new Exception("El usuario no tiene ese rol");
             var result = await _userManager.RemoveFromRoleAsync(user, role);
             if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
         }
+    }
+
+    public async Task<PagedResponse<UserSummaryResponse>> GetAllUsersAsync(int page, int pageSize)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 50);
+
+        var query = _userManager.Users.AsNoTracking().OrderBy(u => u.LastName);
+
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var users = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        var items = new List<UserSummaryResponse>();
+        foreach (var u in users)
+        {
+            var roles = await _userManager.GetRolesAsync(u);
+            items.Add(new UserSummaryResponse
+            {
+                Id = u.Id,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Roles = [.. roles]
+            });
+        }
+
+        return new PagedResponse<UserSummaryResponse>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
     }
 
     // Private

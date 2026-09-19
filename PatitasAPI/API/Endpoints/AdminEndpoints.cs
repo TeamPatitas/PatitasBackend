@@ -111,6 +111,19 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = ex.Message });
             }
         }).WithName("RemoveRoles").RequireAuthorization("DevOnly");
+
+        group.MapGet("/users", async (int? page, int? pageSize, IAuthService authService) =>
+        {
+            try
+            {
+                var result = await authService.GetAllUsersAsync(page ?? 1, pageSize ?? 20);
+                return Results.Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        }).WithName("GetAllUsers").RequireAuthorization("DevOnly");
         
         // Dev seed
         if(app.Environment.IsDevelopment())
