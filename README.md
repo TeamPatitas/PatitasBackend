@@ -155,16 +155,14 @@ curl http://localhost:5000/user \
   "gender": 1,
   "photoUrl": "https://r2.example.com/users/a1b2c3d4.webp",
   "birthDate": "2005-01-01",
-  "role": "User",
+  "roles": ["User"],
   "shelterId": null
 }
 ```
 
 ### PATCH `/user`
 
-- Actualiza perfil.
-- Atributo `Photo` opcional `users/{id}.webp` (si ya tiene foto la nueva lo reemplaza, `Max 10MB`). 
-- Resto campos opcionales `FirstName`, `LastName`, `BirthDate`, `Gender` (Ver [Enums](#enums)).
+Actualiza perfil. `Photo` opcional `users/{id}.webp` (si `Photo != null` reemplaza, `10MB`, `webp Q75 1024px`). Resto campos opcionales `FirstName`, `LastName`, `BirthDate`, `Gender` (Ver [Enums](#enums)).
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 
@@ -187,20 +185,16 @@ curl -X PATCH http://localhost:5000/user \
   "gender": 1,
   "photoUrl": "https://r2.example.com/users/a1b2c3d4.webp",
   "birthDate": "2005-01-01",
-  "role": "User",
+  "roles": ["User"],
   "shelterId": null
 }
 ```
 
 ### DELETE `/user/{id}`
 
-- Borra la cuenta (Referencia 🗣️🗣️). 
-- Solo puede ejecutar el mismo usuario `id` o `Dev`. 
-- Rol DEV puede borrar a cualquier usuario.
-- Si tiene un refugio asignado (`ShelterId`) bloqueará y retornará error `400`
-- Si se borra todos sus Adopciones pasarán de `REQUESTED` → `CANCELLED`.
+Borra cuenta. Solo propio `id` o `Dev`.
 
-* **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
+* **Rol**: Requiere `User` o `ShelterOwner` o `Dev` (verifica `self` o `Dev`).
 
 **curl Request**:
 ```bash
@@ -212,7 +206,7 @@ curl -X DELETE http://localhost:5000/user/a1b2c3d4-e5f6-7890-1234-567890abcdef \
 ```json
 "Usuario borrado"
 ```
-`403` si no es propio ni `Dev`, `400` si tiene refugio.
+`403` si no es propio ni `Dev`, `400` si tiene refugio (`No se puede borrar usuario con refugio asignado`), `REQUESTED` → `CANCELLED`.
 
 ---
 
@@ -292,7 +286,7 @@ curl -X POST http://localhost:5000/pet/ \
 
 ### GET `/pet`
 
-Lista paginada resumida `PetSummaryResponse`.
+Lista paginada resumida `PetSummaryResponse` (`Id, Name, Photos, Available`).
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 * **Query**: `?page=1&pageSize=20` — `page≥1`, `pageSize 1-50`, orden `Name ASC`.
@@ -324,7 +318,7 @@ curl "http://localhost:5000/pet?page=1&pageSize=20" \
 
 ### GET `/pet/{petId}`
 
-Obtiene una mascota detallada.
+Obtiene una mascota detallada `PetResponse`.
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 * **Visibilidad**: `User` ve `404` si `available=false`. `ShelterOwner` ve `false` solo si es su shelter; `Dev` ve todo.
@@ -353,7 +347,7 @@ curl http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
 
 ### PATCH `/pet/{petId}`
 
-Actualización parcial (sin fotos).
+Actualización parcial (sin fotos) con `UpdatePetRequest`.
 
 * **Rol**: Requiere `ShelterOwner` o `Dev` (solo su shelter, `Dev` bypass).
 
@@ -367,21 +361,7 @@ curl -X PATCH http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
   }'
 ```
 
-**Response 200**:
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Firulais",
-  "specie": 1,
-  "breed": "Labrador",
-  "gender": 0,
-  "temperament": "Juguetón",
-  "story": "Rescatado en...",
-  "photos": ["https://r2.example.com/pets/550e8400/pets-550e8400-1.webp"],
-  "available": false,
-  "shelterId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
-}
-```
+**Response 200**: `PetResponse` actualizado.
 
 ### PATCH `/pet/{petId}/photo/{photoIndex}`
 
@@ -396,24 +376,7 @@ curl -X PATCH http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000/pho
   -F "photo=@new1.jpg"
 ```
 
-**Response 200**:
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Firulais",
-  "specie": 1,
-  "breed": "Labrador",
-  "gender": 0,
-  "temperament": "Juguetón",
-  "story": "Rescatado en...",
-  "photos": [
-    "https://r2.example.com/pets/550e8400/pets-550e8400-1.webp",
-    "https://r2.example.com/pets/550e8400/pets-550e8400-2.webp"
-  ],
-  "available": true,
-  "shelterId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
-}
-```
+**Response 200**: `PetResponse` con `photos` actualizado.
 
 ### DELETE `/pet/{petId}`
 
@@ -434,7 +397,7 @@ curl -X DELETE http://localhost:5000/pet/550e8400-e29b-41d4-a716-446655440000 \
 
 ## Refugios
 
-Grupo `/shelter` — Tag `Refugios`. Foto perfil `shelters/{id}.webp` (`10MB`, `webp Q75`, `jpeg/png/webp`, opcional, `null` permitido, patch reemplaza).
+Grupo `/shelter` — Tag `Refugios`. `ShelterResponse` incluye `Owners: Guid[]`.
 
 ### POST `/shelter`
 
@@ -462,7 +425,8 @@ curl -X POST http://localhost:5000/shelter/ \
   "isAvailable": false,
   "latitude": -34.6,
   "longitude": -58.4,
-  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp",
+  "owners": ["a1b2c3d4-e5f6-7890-1234-567890abcdef"]
 }
 ```
 
@@ -489,13 +453,14 @@ curl -X PATCH http://localhost:5000/shelter/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
   "isAvailable": true,
   "latitude": -34.6,
   "longitude": -58.4,
-  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp",
+  "owners": ["a1b2c3d4-e5f6-7890-1234-567890abcdef"]
 }
 ```
 
 ### PATCH `/shelter/enable/{id}`
 
-Habilita refugio (`IsAvailable=true`).
+Habilita refugio (`IsAvailable=true`) y agrega rol `ShelterOwner` a todos los `Owners`.
 
 * **Rol**: Requiere `Dev`.
 
@@ -505,23 +470,11 @@ curl -X PATCH http://localhost:5000/shelter/enable/a0eebc99-9c0b-4ef8-bb6d-6bb9b
   -H "Authorization: Bearer $TOKEN"
 ```
 
-**Response 200**:
-```json
-{
-  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-  "name": "Refugio Patitas",
-  "address": "Calle 123",
-  "isAvailable": true,
-  "latitude": -34.6,
-  "longitude": -58.4,
-  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
-}
-```
-`400 El refugio ya está habilitado` si ya `true`.
+**Response 200**: `ShelterResponse` con `owners`. `400 El refugio ya está habilitado` si ya `true`.
 
 ### PATCH `/shelter/disable/{id}`
 
-Deshabilita refugio (`IsAvailable=false`).
+Deshabilita refugio (`IsAvailable=false`) y remueve rol `ShelterOwner` de todos los `Owners`.
 
 * **Rol**: Requiere `Dev`.
 
@@ -531,23 +484,11 @@ curl -X PATCH http://localhost:5000/shelter/disable/a0eebc99-9c0b-4ef8-bb6d-6bb9
   -H "Authorization: Bearer $TOKEN"
 ```
 
-**Response 200**:
-```json
-{
-  "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-  "name": "Refugio Patitas",
-  "address": "Calle 123",
-  "isAvailable": false,
-  "latitude": -34.6,
-  "longitude": -58.4,
-  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
-}
-```
-`400 El refugio ya está deshabilitado` si ya `false`.
+**Response 200**: `ShelterResponse`. `400 El refugio ya está deshabilitado` si ya `false`.
 
 ### GET `/shelter`
 
-Lista paginada.
+Lista paginada resumida `ShelterSummaryResponse` (`Id, Name, IsAvailable`).
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 * **Query**: `?page=1&pageSize=20` — `page≥1`, `pageSize 1-50`, orden `Name ASC`.
@@ -566,11 +507,7 @@ curl "http://localhost:5000/shelter?page=1&pageSize=20" \
     {
       "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
       "name": "Refugio Patitas",
-      "address": "Calle 123",
-      "isAvailable": true,
-      "latitude": -34.6,
-      "longitude": -58.4,
-      "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+      "isAvailable": true
     }
   ],
   "page": 1,
@@ -582,7 +519,7 @@ curl "http://localhost:5000/shelter?page=1&pageSize=20" \
 
 ### GET `/shelter/{id}`
 
-Obtiene refugio por id.
+Obtiene refugio detallado `ShelterResponse` con `owners`.
 
 * **Rol**: Requiere `User` o `ShelterOwner` o `Dev`.
 * **Visibilidad**: `IsAvailable=false` solo `Dev` o dueño (`user.ShelterId == id`), resto `404`.
@@ -602,7 +539,8 @@ curl http://localhost:5000/shelter/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11 \
   "isAvailable": true,
   "latitude": -34.6,
   "longitude": -58.4,
-  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp"
+  "photoUrl": "https://r2.example.com/shelters/a0eebc99.webp",
+  "owners": ["a1b2c3d4-e5f6-7890-1234-567890abcdef"]
 }
 ```
 
@@ -622,21 +560,83 @@ curl -X DELETE http://localhost:5000/shelter/a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a1
 ```json
 "Refugio Borrado"
 ```
-`404` si no existe, `403` si no es dueño ni `Dev`.
 
 ---
 
-## Health
+## Administración
 
-### GET `/health`
+Grupo `/admin` — solo `Dev` (excepto `/admin/user` mantiene `User`).
 
-Verifica servicios externos. Solo `Dev`.
+### GET `/admin/users`
+
+Lista usuarios `UserSummaryResponse` (`Id, FirstName, LastName, Roles`).
 
 * **Rol**: Requiere `Dev`.
 
 **curl Request**:
 ```bash
-curl http://localhost:5000/health \
+curl "http://localhost:5000/admin/users?page=1&pageSize=20" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**Response 200**:
+```json
+{
+  "items": [
+    { "id": "a1b2...", "firstName": "Maria", "lastName": "Adoptante", "roles": ["User"] }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalCount": 10,
+  "totalPages": 1
+}
+```
+
+### PATCH `/admin/add-roles`
+
+Agrega roles. Ignora si ya los tiene → `200`.
+
+* **Rol**: Requiere `Dev`.
+
+**curl Request**:
+```bash
+curl -X PATCH http://localhost:5000/admin/add-roles \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"a1b2c3d4...","roles":["ShelterOwner"]}'
+```
+
+**Response 200**: `"Roles agregados"` | `400 Rol no existe: ...`
+
+### PATCH `/admin/remove-roles`
+
+Remueve roles. Si no lo tiene → `400 "El usuario no tiene ese rol"`.
+
+* **Rol**: Requiere `Dev`.
+
+**curl Request**:
+```bash
+curl -X PATCH http://localhost:5000/admin/remove-roles \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"a1b2c3d4...","roles":["ShelterOwner"]}'
+```
+
+**Response 200**: `"Roles removidos"`
+
+---
+
+## Health
+
+### GET `/admin/health`
+
+Verifica `database` (Postgres), `storage` (R2), `email` (Resend), `api`.
+
+* **Rol**: Requiere `Dev`. Solo en `Development` (`AdminEndpoints`).
+
+**curl Request**:
+```bash
+curl http://localhost:5000/admin/health \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -674,7 +674,7 @@ curl http://localhost:5000/health \
 | `400` | `PhotoIndex debe ser 1, 2 o 3.` |
 | `400` | `El refugio ya está habilitado` / `El refugio ya está deshabilitado` |
 | `400` | `No se puede borrar usuario con refugio asignado` |
-| `400` | `Usuario no encontrado` |
+| `400` | `Usuario no encontrado` / `Rol no existe: ...` / `El usuario no tiene ese rol` |
 | `400` | `El correo ya ha sido verificado` |
 | `429` | `Espera 1 minuto antes de volver a solicitar la verificación.` |
 | `400` | `Name/Breed/Temperament/Story no puede estar vacío / máximo 100 caracteres` |
