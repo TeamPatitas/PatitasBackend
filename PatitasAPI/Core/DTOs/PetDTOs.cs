@@ -32,7 +32,7 @@ public record CreatePetRequest
     public required string Temperament { get; init; }
     public required string Story { get; init; }
     public bool? Available { get; init; } = false;
-    public List<IFormFile>? Photos { get; init; }
+    public IList<IFormFile>? Photos { get; init; }
 };
 
 public record UpdatePetRequest
