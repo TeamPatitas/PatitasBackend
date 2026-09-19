@@ -35,10 +35,10 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         Available = pet.Available
     };
 
-    private static void ValidatePhotoFiles(List<IFormFile>? photos)
+    private static void ValidatePhotoFiles(IEnumerable<IFormFile>? photos)
     {
         if (photos == null) return;
-        if (photos.Count > 3)
+        if (photos.Count() > 3)
             throw new ArgumentException("Máximo 3 imágenes por mascota.");
         foreach (var file in photos)
         {

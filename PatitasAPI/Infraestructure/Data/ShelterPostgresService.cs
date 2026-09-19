@@ -20,7 +20,16 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         IsAvailable = shelter.IsAvailable,
         Latitude = shelter.Latitude,
         Longitude = shelter.Longitude,
-        PhotoUrl = shelter.PhotoUrl
+        PhotoUrl = shelter.PhotoUrl,
+        Owners = shelter.Owners.Select(o => Guid.Parse(o.Id)).ToList()
+    };
+
+    private static ShelterSummaryResponse ToSummaryResponse(Shelter shelter) => new ShelterSummaryResponse
+    {
+        Id = shelter.Id,
+        Name = shelter.Name,
+        PhotoUrl = shelter.PhotoUrl,
+        IsAvailable = shelter.IsAvailable
     };
 
     public async Task<ShelterResponse> CreateShelterAsync(CreateShelterRequest req, string userId)
@@ -54,6 +63,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         if (!updateResult.Succeeded)
             throw new InvalidOperationException("Error al asignar refugio al usuario: " + string.Join(", ", updateResult.Errors.Select(e => e.Description)));
 
+        await _context.Entry(shelter).Collection(s => s.Owners).LoadAsync();
         return ToResponse(shelter);
     }
 
@@ -98,7 +108,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         return ToResponse(shelter);
     }
 
-    public async Task<PagedResponse<ShelterResponse>> GetAllAsync(int page, int pageSize, string? requesterUserId = null)
+    public async Task<PagedResponse<ShelterSummaryResponse>> GetAllAsync(int page, int pageSize, string? requesterUserId = null)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 50);
@@ -123,9 +133,9 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-        return new PagedResponse<ShelterResponse>
+        return new PagedResponse<ShelterSummaryResponse>
         {
-            Items = items.Select(ToResponse),
+            Items = items.Select(ToSummaryResponse),
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount,
@@ -135,7 +145,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
 
     public async Task<ShelterResponse?> GetByIdAsync(Guid shelterId, string? requesterUserId = null)
     {
-        var shelter = await _context.Shelters.FindAsync(shelterId);
+        var shelter = await _context.Shelters.Include(s => s.Owners).FirstOrDefaultAsync(s => s.Id == shelterId);
         if (shelter == null) return null;
 
         if (!shelter.IsAvailable)
@@ -154,7 +164,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
     public async Task<ShelterResponse?> UpdateAsync(Guid shelterId, UpdateShelterRequest request, string userId)
     {
         var user = await _userManager.FindByIdAsync(userId) ?? throw new UnauthorizedAccessException("Usuario no encontrado");
-        var shelter = await _context.Shelters.FindAsync(shelterId);
+        var shelter = await _context.Shelters.Include(s => s.Owners).FirstOrDefaultAsync(s => s.Id == shelterId);
         if (shelter == null) return null;
 
         var isDev = await _userManager.IsInRoleAsync(user, "Dev");
