@@ -8,53 +8,7 @@ public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this WebApplication app)
     {
-        app.MapGet("/user", async (ClaimsPrincipal user, IAuthService authService) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null) return Results.Unauthorized();
-            try
-            {
-                var response = await authService.GetUserAsync(Guid.Parse(userId));
-                return Results.Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { message = ex.Message });
-            }
-        }).WithName("GetCurrentUser").RequireAuthorization("User");
-
-        app.MapPatch("/user", async ([FromForm] UpdateUserRequest request, ClaimsPrincipal user, IAuthService authService) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null) return Results.Unauthorized();
-            try
-            {
-                var response = await authService.UpdateUserAsync(Guid.Parse(userId), request);
-                return Results.Ok(response);
-            }
-            catch (Exception ex)
-            {
-                return Results.BadRequest(new { message = ex.Message });
-            }
-        }).WithName("UpdateCurrentUser").RequireAuthorization("User").DisableAntiforgery();
-
-        app.MapDelete("/user/{id:guid}", async (Guid id, ClaimsPrincipal user, IAuthService authService) =>
-        {
-            var requesterId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (requesterId == null) return Results.Unauthorized();
-            try
-            {
-                var deleted = await authService.DeleteUserAsync(id, Guid.Parse(requesterId));
-                if (!deleted) return Results.NotFound(new { message = "Usuario no encontrado" });
-                return Results.Ok("Usuario borrado");
-            }
-            catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
-            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
-            catch (Exception ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("Borrar Usuario").RequireAuthorization("User");
-
-        // Auth
-        var group = app.MapGroup("/auth").WithTags("Authentication");
+        var group = app.MapGroup("/auth").WithTags("Autenticación");
 
         group.MapPost("/login", async (LoginRequest request, IAuthService authService) =>
         {

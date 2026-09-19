@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PatitasAPI.Core.Entities;
@@ -56,11 +58,16 @@ public static class InfraestructureServices
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
             options.AddPolicy("EmailVerificationCooldown", httpContext => {
-                var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var partitionKey = !string.IsNullOrEmpty(userId) 
+                    ? $"user_{userId}" 
+                    : $"ip_{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
 
                 return RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: clientIp, 
+                    partitionKey: partitionKey, 
                     factory: partition => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 1, 
@@ -70,13 +77,63 @@ public static class InfraestructureServices
                     }
                 );
             });
+            options.AddPolicy("HealthCheckCooldown", httpContext => {
+                var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            options.OnRejected = async (context, cancellationToken) =>
-            {
+                var partitionKey = !string.IsNullOrEmpty(userId) 
+                    ? $"user_{userId}" 
+                    : $"ip_{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: partitionKey, 
+                    factory: partition => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 1, 
+                        Window = TimeSpan.FromSeconds(30), 
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }
+                );
+            });
+            options.AddPolicy("ShelterSwitchAviabilityCooldown", httpContext => {
+                var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var partitionKey = !string.IsNullOrEmpty(userId) 
+                    ? $"user_{userId}" 
+                    : $"ip_{httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: partitionKey, 
+                    factory: partition => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 1, 
+                        Window = TimeSpan.FromMinutes(5), 
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }
+                );
+            });
+
+            options.OnRejected = async (context, cancellationToken) =>{
                 context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+                var endpoint = context.HttpContext.GetEndpoint();
+                var rateLimitAttribute = endpoint?.Metadata.GetMetadata<EnableRateLimitingAttribute>();
+                var policyName = rateLimitAttribute?.PolicyName;
+
+                string errorMessage = policyName switch
+                {
+                    "EmailVerificationCooldown" => "Espera 1 minuto antes de volver a solicitar la verificación.",
+                    "HealthCheckCooldown"     => "Espera 30 segundos antes de volver a hacer health check.",
+                    "ShelterSwitchAviabilityCooldown" => "Espera 5 minutos para cambiar el estado del refugio nuevamente.",
+
+                    _ => "Muchas solicitudes. Espera un momento antes de volver a intentar."
+                };
+
                 await context.HttpContext.Response.WriteAsJsonAsync(
-                    new { error = "Espera 1 minuto antes de volver a solicitar la verificación." }, 
-                    cancellationToken);
+                    new { error = errorMessage }, 
+                    cancellationToken
+                );
             };
         });
 

@@ -68,23 +68,33 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
 
     public async Task<ShelterResponse?> EnableAsync(Guid shelterId)
     {
-        var shelter = await _context.Shelters.FindAsync(shelterId);
+        var shelter = await _context.Shelters.Include(s => s.Owners).FirstOrDefaultAsync(s => s.Id == shelterId);
         if (shelter == null) return null;
         if (shelter.IsAvailable)
             throw new InvalidOperationException("El refugio ya está habilitado");
         shelter.IsAvailable = true;
         await _context.SaveChangesAsync();
+        foreach (var owner in shelter.Owners)
+        {
+            if (!await _userManager.IsInRoleAsync(owner, "ShelterOwner"))
+                await _userManager.AddToRoleAsync(owner, "ShelterOwner");
+        }
         return ToResponse(shelter);
     }
 
     public async Task<ShelterResponse?> DisableAsync(Guid shelterId)
     {
-        var shelter = await _context.Shelters.FindAsync(shelterId);
+        var shelter = await _context.Shelters.Include(s => s.Owners).FirstOrDefaultAsync(s => s.Id == shelterId);
         if (shelter == null) return null;
         if (!shelter.IsAvailable)
             throw new InvalidOperationException("El refugio ya está deshabilitado");
         shelter.IsAvailable = false;
         await _context.SaveChangesAsync();
+        foreach (var owner in shelter.Owners)
+        {
+            if (await _userManager.IsInRoleAsync(owner, "ShelterOwner"))
+                await _userManager.RemoveFromRoleAsync(owner, "ShelterOwner");
+        }
         return ToResponse(shelter);
     }
 
