@@ -13,12 +13,13 @@ using PatitasAPI.Infraestructure.Data;
 
 namespace PatitasAPI.Infraestructure.Auth;
 
-public class IdentityAuthService(UserManager<AppUser> userManager, IStorageService storageService, IEmailService emailService, PatitasDbContext dbContext) : IAuthService
+public class IdentityAuthService(UserManager<AppUser> userManager, IStorageService storageService, IEmailService emailService, PatitasDbContext dbContext, RoleManager<IdentityRole> roleManager) : IAuthService
 {
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly IStorageService _storageService = storageService;
     private readonly IEmailService _emailService = emailService;
     private readonly PatitasDbContext _dbContext = dbContext;
+    private readonly RoleManager<IdentityRole> _roleManager = roleManager;
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
@@ -253,6 +254,31 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
         var result = await _userManager.DeleteAsync(targetUser);
         if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
         return true;
+    }
+
+    public async Task AddUserRolesAsync(SwitchRolesRequest req)
+    {
+        var user = await _userManager.FindByIdAsync(req.UserId.ToString()) ?? throw new Exception("Usuario no encontrado");
+        foreach (var role in req.Roles)
+        {
+            if (!await _roleManager.RoleExistsAsync(role))
+                throw new Exception($"Rol no existe: {role}");
+            if (await _userManager.IsInRoleAsync(user, role)) continue;
+            var result = await _userManager.AddToRoleAsync(user, role);
+            if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
+    public async Task RemoveRolesAsync(SwitchRolesRequest req)
+    {
+        var user = await _userManager.FindByIdAsync(req.UserId.ToString()) ?? throw new Exception("Usuario no encontrado");
+        foreach (var role in req.Roles)
+        {
+            if (!await _userManager.IsInRoleAsync(user, role))
+                throw new Exception($"El usuario no tiene ese rol: {role}");
+            var result = await _userManager.RemoveFromRoleAsync(user, role);
+            if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
+        }
     }
 
     // Private

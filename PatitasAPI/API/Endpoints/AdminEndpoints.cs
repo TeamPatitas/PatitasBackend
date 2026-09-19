@@ -63,7 +63,8 @@ public static class AdminEndpoints
         }).WithName("Borrar Usuario").RequireAuthorization("User");
 
         // Shelter
-        group.MapPatch("/enable/{id:guid}", async (Guid id, IShelterService shelterService) =>
+        var shelterGroup = group.MapGroup("/shelter");
+        shelterGroup.MapPatch("/enable/{id:guid}", async (Guid id, IShelterService shelterService) =>
         {
             try
             {
@@ -74,7 +75,7 @@ public static class AdminEndpoints
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("EnableShelter").RequireAuthorization("DevOnly").RequireRateLimiting("ShelterSwitchAviabilityCooldown");
 
-        group.MapPatch("/disable/{id:guid}", async (Guid id, IShelterService shelterService) =>
+        shelterGroup.MapPatch("/disable/{id:guid}", async (Guid id, IShelterService shelterService) =>
         {
             try
             {
@@ -84,6 +85,32 @@ public static class AdminEndpoints
             }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("DisableShelter").RequireAuthorization("DevOnly").RequireRateLimiting("ShelterSwitchAviabilityCooldown");
+
+        group.MapPatch("/add-roles", async (SwitchRolesRequest req, IAuthService authService) =>
+        {
+            try
+            {
+                await authService.AddUserRolesAsync(req);
+                return Results.Ok("Roles agregados");
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        }).WithName("AddRoles").RequireAuthorization("DevOnly");
+
+        group.MapPatch("/remove-roles", async (SwitchRolesRequest req, IAuthService authService) =>
+        {
+            try
+            {
+                await authService.RemoveRolesAsync(req);
+                return Results.Ok("Roles removidos");
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        }).WithName("RemoveRoles").RequireAuthorization("DevOnly");
         
         // Dev seed
         if(app.Environment.IsDevelopment())

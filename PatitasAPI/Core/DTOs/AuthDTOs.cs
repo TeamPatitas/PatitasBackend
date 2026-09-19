@@ -41,3 +41,8 @@ public record UserResponse
     public required string Role { get; init; }
     public Guid? ShelterId { get; init; }
 };
+public record SwitchRolesRequest
+{
+    public required Guid UserId { get; init; }
+    public required List<string> Roles { get; init; }
+};

@@ -10,4 +10,6 @@ public interface IAuthService
     Task SendEmailVerificationAsync(Guid userId);
     Task VerifyEmailAsync(Guid userId, string token);
     Task<bool> DeleteUserAsync(Guid targetUserId, Guid requesterUserId);
+    Task AddUserRolesAsync(SwitchRolesRequest req);
+    Task RemoveRolesAsync(SwitchRolesRequest req);
 }
