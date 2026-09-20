@@ -17,7 +17,8 @@ public class ResendEmailService(HttpClient httpClient) : IEmailService
 
         var payload = new
         {
-            from = "Patitas al Rescate <no-reply@patitasalrescate.galaxym4.dev>", 
+            from = "Patitas al Rescate <no-reply@patitasalrescate.galaxym4.dev>",
+            to = email,
             email = new[] { email },
             subject = subject,
             html = htmlBody
