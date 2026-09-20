@@ -14,10 +14,14 @@ public static class AdminEndpoints
     {
         var group = app.MapGroup("/admin").WithTags("Administración");
 
-        group.MapGet("/health", async (IHealthService healthService) => {
+        var healthEndpoint = group.MapGet("/health", async (IHealthService healthService) => {
             var result = await healthService.CheckHealthAsync();
             return result.Status == "UP" ? Results.Ok(result) : Results.Json(result, statusCode: 503);
-        }).WithName("HealthCheck").RequireAuthorization("DevOnly").RequireRateLimiting("HealthCheckCooldown");
+        }).WithName("HealthCheck")
+        .WithDescription("Verifica el estado de la api y sus dependencias, es piola pa saber que c cayó xd")
+        .Produces<HealthResponse>()
+        .RequireAuthorization("DevOnly")
+        .RequireRateLimiting("HealthCheckCooldown");
 
         // User endpoints - mantienen permisos User
         group.MapGet("/user", async (ClaimsPrincipal user, IAuthService authService) => {
@@ -32,7 +36,10 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("GetCurrentUser").RequireAuthorization("User");
+        }).WithName("GetCurrentUser")
+        .WithDescription("Obtiene la información del usuario actual, necesita que el usuario haya iniciado sesión.")
+        .Produces<UserResponse>(StatusCodes.Status200OK)
+        .RequireAuthorization("User");
 
         group.MapPatch("/user", async ([FromForm] UpdateUserRequest request, ClaimsPrincipal user, IAuthService authService) => {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -46,7 +53,11 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("UpdateCurrentUser").RequireAuthorization("User").DisableAntiforgery();
+        }).WithName("UpdateCurrentUser")
+        .WithDescription("Actualiza la información del usuario, necesita que el usuario haya iniciado sesión, pero si tienes rol dev puedes modificar cualquier cosa a cualquiera xd.")
+        .Produces<UserResponse>(StatusCodes.Status200OK)
+        .RequireAuthorization("User")
+        .DisableAntiforgery();
 
         group.MapDelete("/user/{id:guid}", async (Guid id, ClaimsPrincipal user, IAuthService authService) => {
             var requesterId = user.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -60,7 +71,10 @@ public static class AdminEndpoints
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (Exception ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("Borrar Usuario").RequireAuthorization("User");
+        }).WithName("Borrar Usuario")
+        .WithDescription("CUIDADO Borra el usuario con el ID especificado, esto es irreversible usarlo con mucha cautela, si eres dev tambien puedes eliminarlo a cualquiera 🐒 ")
+        .Produces<bool>(StatusCodes.Status200OK)
+        .RequireAuthorization("User");
 
         // Shelter
         var shelterGroup = group.MapGroup("/shelter");
@@ -73,7 +87,11 @@ public static class AdminEndpoints
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("EnableShelter").RequireAuthorization("DevOnly").RequireRateLimiting("ShelterSwitchAviabilityCooldown");
+        }).WithName("EnableShelter")
+        .WithDescription("Habilita un shelter con el ID especificado, hace que el refugio aparezca para todos los usuarios y luego asigna el rol ShelterOwner a todos los dueños del refugio.")
+        .Produces<ShelterResponse?>(StatusCodes.Status200OK)
+        .RequireAuthorization("DevOnly")
+        .RequireRateLimiting("ShelterSwitchAviabilityCooldown");
 
         shelterGroup.MapPatch("/disable/{id:guid}", async (Guid id, IShelterService shelterService) =>
         {
@@ -84,7 +102,11 @@ public static class AdminEndpoints
                 return Results.Ok(result);
             }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("DisableShelter").RequireAuthorization("DevOnly").RequireRateLimiting("ShelterSwitchAviabilityCooldown");
+        }).WithName("DisableShelter")
+        .WithDescription("Deshabilita un shelter con el ID especificado, hace que el refugio no aparezca para los usuarios y luego remueve el rol ShelterOwner de todos los dueños del refugio.")
+        .Produces<ShelterResponse?>(StatusCodes.Status200OK)
+        .RequireAuthorization("DevOnly")
+        .RequireRateLimiting("ShelterSwitchAviabilityCooldown");
 
         group.MapPatch("/add-roles", async (SwitchRolesRequest req, IAuthService authService) =>
         {
@@ -97,7 +119,9 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("AddRoles").RequireAuthorization("DevOnly");
+        }).WithName("AddRoles")
+        .WithDescription("Agrega roles a un usuario. El nombre lo dice todo 🤌")
+        .RequireAuthorization("DevOnly");
 
         group.MapPatch("/remove-roles", async (SwitchRolesRequest req, IAuthService authService) =>
         {
@@ -110,7 +134,9 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("RemoveRoles").RequireAuthorization("DevOnly");
+        }).WithName("RemoveRoles")
+        .WithDescription("Remueve roles de un usuario. El nombre lo dice todo 🤌")
+        .RequireAuthorization("DevOnly");
 
         group.MapGet("/users", async (int? page, int? pageSize, IAuthService authService) =>
         {
@@ -123,7 +149,10 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("GetAllUsers").RequireAuthorization("DevOnly");
+        }).WithName("GetAllUsers")
+        .WithDescription("Obtiene todos los usuarios.")
+        .Produces<PagedResponse<UserSummaryResponse>>(StatusCodes.Status200OK)
+        .RequireAuthorization("DevOnly");
         
         // Dev seed
         if(app.Environment.IsDevelopment())

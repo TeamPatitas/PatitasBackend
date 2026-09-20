@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using PatitasAPI.Core.DTOs;
 using PatitasAPI.Core.Interfaces;
+using PatitasAPI.Infraestructure;
 namespace PatitasAPI.API.Endpoints;
 
 public static class AuthEndpoints
@@ -21,7 +22,9 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("Iniciar Sesión");
+        }).WithName("Iniciar Sesión")
+        .WithDescription("Iniciar sesión pez")
+        .Produces<AuthResponse>(StatusCodes.Status200OK);
 
         group.MapPost("/register", async ([FromForm] RegisterRequest request, IAuthService authService) =>
         {
@@ -34,7 +37,10 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("Registrarse").DisableAntiforgery();
+        }).WithName("Registrarse")
+        .WithDescription("Registrarse pez")
+        .Produces<AuthResponse>(StatusCodes.Status200OK)
+        .DisableAntiforgery();
 
         group.MapGet("/verify-email", async (Guid userId, string token, IAuthService authService) => {
             try
@@ -46,7 +52,8 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("Verificar Correo");
+        }).WithName("Verificar Correo")
+        .WithDescription("Verifica el correo del usuario, esta wea está pensada para que se redireccione desde frontend.");
 
         group.MapGet("/send-verification-email", async (IAuthService authService, ClaimsPrincipal user) =>
         {
@@ -55,12 +62,16 @@ public static class AuthEndpoints
             try
             {
                 await authService.SendEmailVerificationAsync(Guid.Parse(userId));
-                return Results.Ok("Correo de verificación enviado correctamente");
+                var frontendUrl = PatitasEnv.GetEnvVariable("FRONTEND_URL");
+                return Results.Redirect($"{frontendUrl}/user");
             }
             catch (Exception ex)
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("Enviar Correo de Verificación").RequireAuthorization("User").RequireRateLimiting("EmailVerificationCooldown");
+        }).WithName("Enviar Correo de Verificación")
+        .WithDescription("Envía un correo de verificación al usuario")
+        .RequireAuthorization("User")
+        .RequireRateLimiting("EmailVerificationCooldown");
     }
 }

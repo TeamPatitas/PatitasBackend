@@ -23,14 +23,21 @@ public static class PetEndpoints
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("CreatePet").RequireAuthorization("ShelterOwner").DisableAntiforgery();
+        }).WithName("CreatePet")
+        .WithDescription("Crea una nueva mascota, es todo xd")
+        .Produces<PetResponse>(StatusCodes.Status201Created)
+        .RequireAuthorization("ShelterOwner")
+        .DisableAntiforgery();
 
         group.MapGet("/", async (int? page, int? pageSize, ClaimsPrincipal user, IPetService petService) =>
         {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await petService.GetAllPetsAsync(page ?? 1, pageSize ?? 20, userId);
             return Results.Ok(result);
-        }).WithName("GetAllPets").RequireAuthorization("User");
+        }).WithName("GetAllPets")
+        .WithDescription("Obtiene todas las mascotas.")
+        .Produces<PagedResponse<PetSummaryResponse>>(StatusCodes.Status200OK)
+        .RequireAuthorization("User");
 
         group.MapGet("/{petId:guid}", async (Guid petId, ClaimsPrincipal user, IPetService petService) =>
         {
@@ -41,7 +48,10 @@ public static class PetEndpoints
                 return Results.NotFound();
             }
             return Results.Ok(petResponse);
-        }).WithName("GetPetById").RequireAuthorization("User");
+        }).WithName("GetPetById")
+        .WithDescription("Obtiene los detalles deuna mascota por su ID.")
+        .Produces<PetResponse>(StatusCodes.Status200OK)
+        .RequireAuthorization("User");
 
         group.MapPatch("/{petId:guid}", async (Guid petId, UpdatePetRequest request, ClaimsPrincipal user, IPetService petService) =>
         {
@@ -56,7 +66,10 @@ public static class PetEndpoints
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("UpdatePet").RequireAuthorization("ShelterOwner");
+        }).WithName("UpdatePet")
+        .WithDescription("Actualiza los datos de una mascota.")
+        .Produces<PetResponse?>(StatusCodes.Status200OK)
+        .RequireAuthorization("ShelterOwner");
 
         group.MapPatch("/{petId:guid}/photo/{photoIndex:int}", async (Guid petId, int photoIndex, IFormFile photo, ClaimsPrincipal user, IPetService petService) =>
         {
@@ -71,7 +84,11 @@ public static class PetEndpoints
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("UpdatePetPhoto").RequireAuthorization("ShelterOwner").DisableAntiforgery();
+        }).WithName("UpdatePetPhoto")
+        .WithDescription("Actualiza la foto de una mascota, son 3 fotos por mascota y este endpoint reemplaza el especificado.")
+        .RequireAuthorization("ShelterOwner")
+        .Produces<PetResponse?>(StatusCodes.Status200OK)
+        .DisableAntiforgery();
 
         group.MapDelete("/{petId:guid}", async (Guid petId, ClaimsPrincipal user, IPetService petService) =>
         {
@@ -85,6 +102,9 @@ public static class PetEndpoints
             }
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("DeletePet").RequireAuthorization("ShelterOwner");
+        }).WithName("DeletePet")
+        .WithDescription("CUIDADO: Elimina una mascota pero tambien elimina todo lo relacionado a ella, es irreversible usarlo con cautela.")
+        .Produces(StatusCodes.Status204NoContent)
+        .RequireAuthorization("ShelterOwner");
     }
 }
