@@ -206,6 +206,12 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         var isOwner = user.ShelterId == shelterId;
         if (!isDev && !isOwner) throw new UnauthorizedAccessException("No puedes borrar este refugio");
 
+        foreach (var owner in shelter.Owners)
+        {
+            if (await _userManager.IsInRoleAsync(owner, "ShelterOwner"))
+                await _userManager.RemoveFromRoleAsync(owner, "ShelterOwner");
+        }
+
         _context.Shelters.Remove(shelter);
         await _context.SaveChangesAsync();
         return true;

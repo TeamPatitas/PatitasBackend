@@ -1,3 +1,6 @@
+using System.Text;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi;
 using PatitasAPI.API;
@@ -7,11 +10,20 @@ using PatitasAPI.Infraestructure.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 PatitasEnv.ValidateEnv();
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.ConfigureHttpJsonOptions(options => {
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options => {
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
+builder.Services.AddCors();
+builder.Services.AddControllers().AddJsonOptions(options => {
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});;
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -37,16 +49,22 @@ builder.Services.AddSwaggerGen(c =>
     {
         [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
+
+    c.OperationFilter<DocsFilter>();
 });
+
 
 var app = builder.Build();
 var baseUrl = PatitasEnv.GetEnvVariable("API_BASE_URL");
+if(PatitasEnv.HasFrontendUrl()){
+    var frontendUrl = PatitasEnv.GetEnvVariable("FRONTEND_URL");
+    app.UseCors(policy => policy.WithOrigins(frontendUrl).AllowAnyHeader().AllowAnyMethod());
+}
+app.UseSwagger();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Patitas API v1");

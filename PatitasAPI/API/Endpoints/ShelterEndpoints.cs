@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using PatitasAPI.Core.DTOs;
 using PatitasAPI.Core.Interfaces;
 
@@ -22,7 +23,11 @@ public static class ShelterEndpoints
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("CreateShelter").RequireAuthorization("User").DisableAntiforgery();
+        }).WithName("CreateShelter")
+        .WithDescription("Crea un nuevo refugio, es todo xd, luego los devs verán si activan el refugio.")
+        .Produces<ShelterResponse>(StatusCodes.Status201Created)
+        .RequireAuthorization("User")
+        .DisableAntiforgery();
 
         group.MapPatch("/{id:guid}", async (Guid id, [FromForm] UpdateShelterRequest request, ClaimsPrincipal user, IShelterService shelterService) =>
         {
@@ -37,14 +42,21 @@ public static class ShelterEndpoints
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
-        }).WithName("UpdateShelter").RequireAuthorization("User").DisableAntiforgery();
+        }).WithName("UpdateShelter")
+        .WithDescription("Actualiza los datos de un refugio.")
+        .Produces<ShelterResponse?>(StatusCodes.Status200OK)
+        .RequireAuthorization("User")
+        .DisableAntiforgery();
 
         group.MapGet("/", async (int? page, int? pageSize, ClaimsPrincipal user, IShelterService shelterService) =>
         {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
             var result = await shelterService.GetAllAsync(page ?? 1, pageSize ?? 20, userId);
             return Results.Ok(result);
-        }).WithName("GetAllShelters").RequireAuthorization("User");
+        }).WithName("GetAllShelters")
+        .WithDescription("Obtiene todos los refugios.")
+        .Produces<PagedResponse<ShelterSummaryResponse>>(StatusCodes.Status200OK)
+        .RequireAuthorization("User");
 
         group.MapGet("/{id:guid}", async (Guid id, ClaimsPrincipal user, IShelterService shelterService) =>
         {
@@ -52,7 +64,10 @@ public static class ShelterEndpoints
             var result = await shelterService.GetByIdAsync(id, userId);
             if (result == null) return Results.NotFound();
             return Results.Ok(result);
-        }).WithName("GetShelterById").RequireAuthorization("User");
+        }).WithName("GetShelterById")
+        .WithDescription("Obtiene los detalles de un refugio por su ID.")
+        .Produces<ShelterResponse?>(StatusCodes.Status200OK)
+        .RequireAuthorization("User");
 
         group.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal user, IShelterService shelterService) =>
         {
@@ -65,6 +80,8 @@ public static class ShelterEndpoints
                 return Results.Ok("Refugio Borrado");
             }
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
-        }).WithName("DeleteShelter").RequireAuthorization("ShelterOwner");
+        }).WithName("DeleteShelter")
+        .WithDescription("CUIDADO: Elimina un refugio, esto es irreversible y elimina todo lo relacionado a ella (adopciones, mascotas) usarlo con cautela, si eres dev tambien puedes eliminarlo a cualquiera 🐒 ")
+        .RequireAuthorization("ShelterOwner");
     }
 }

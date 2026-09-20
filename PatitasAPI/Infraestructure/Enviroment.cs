@@ -34,6 +34,19 @@ public static class PatitasEnv
                 throw new InvalidOperationException($"La variable: \"'{variable}'\" no existe en el entorno (.env)");
             }
         }
+
+        var warningVariables = new List<string>
+        {
+            "FRONTEND_URL"
+        };
+
+        foreach (var variable in warningVariables)
+        {
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(variable)))
+            {
+                Console.WriteLine($"WARN: La variable: \"'{variable}'\" no existe en el entorno (.env)");
+            }
+        }
     }
 
     public static string GetEnvVariable(string variableName)
@@ -61,5 +74,11 @@ public static class PatitasEnv
     {
         var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
         return env == "Development";
+    }
+
+    public static bool HasFrontendUrl()
+    {
+        var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
+        return !string.IsNullOrEmpty(frontendUrl);
     }
 }
