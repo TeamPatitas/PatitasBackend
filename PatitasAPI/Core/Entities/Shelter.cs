@@ -13,6 +13,7 @@ public class Shelter
     public double? Longitude { get; set; }
 
     public string? PhotoUrl { get; set; }
+    public string? YapeQrCode { get; set; }
     public bool IsAvailable { get; set; } = false;
     // Navigation Variables
     public ICollection<Pet> Pets { get; set; } = [];

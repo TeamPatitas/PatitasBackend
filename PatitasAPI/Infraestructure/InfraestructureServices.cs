@@ -147,6 +147,7 @@ public static class InfraestructureServices
         services.AddScoped<IAuthService, IdentityAuthService>();
         services.AddScoped<IPetService, PetsPostgresService>();
         services.AddScoped<IShelterService, ShelterPostgresService>();
+        services.AddScoped<IEventService, EventsPostgresService>();
         services.AddScoped<IHealthService, HealthService>();
 
         return services;

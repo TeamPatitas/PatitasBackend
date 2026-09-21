@@ -10,8 +10,7 @@ public static class AuthEndpoints
     public static void MapAuthEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/auth").WithTags("Autenticación");
-         var frontendUrl = PatitasEnv.GetEnvVariable("FRONTEND_URL");
-
+        var frontendUrl = PatitasEnv.GetEnvVariable("FRONTEND_URL");
 
         group.MapPost("/login", async (LoginRequest request, IAuthService authService) =>
         {

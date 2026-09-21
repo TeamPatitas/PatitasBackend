@@ -98,13 +98,13 @@ public static class PetEndpoints
             {
                 var deleted = await petService.DeletePetAsync(petId, userId);
                 if (!deleted) return Results.NotFound();
-                return Results.NoContent();
+                return Results.Ok();
             }
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("DeletePet")
         .WithDescription("$important{CUIDADO: Usarlo con cautela}. Elimina una mascota pero también elimina todo lo relacionado a ella, es irreversible.")
-        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status200OK)
         .RequireAuthorization("ShelterOwner");
     }
 }
