@@ -1,7 +1,9 @@
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using PatitasAPI.API;
 using PatitasAPI.Infraestructure;
@@ -51,6 +53,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     c.OperationFilter<DocsFilter>();
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    
+    c.IncludeXmlComments(xmlPath);
 });
 
 
@@ -83,7 +89,17 @@ using (var scope = app.Services.CreateScope())
     }
 
     await AuthSeeder.SeedRolesAsync(scope.ServiceProvider);
-}
+
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<PatitasDbContext>(); // Usa el nombre exacto de tu DbContext
+        await dbContext.Database.MigrateAsync();
+    } catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocurrió un error al aplicar las migraciones de la base de datos.");
+    }
+} 
 
 app.MapAllEndpoints();
 app.MapGet("/", () => "Hola pez, PatitasAPI made with ❤️ by GM4 & PatitasTeam");

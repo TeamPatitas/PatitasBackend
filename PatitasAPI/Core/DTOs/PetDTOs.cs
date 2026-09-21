@@ -12,6 +12,7 @@ public record PetResponse
     public required string Story { get; init; }
     public required IEnumerable<string> Photos { get; init; }
     public required bool Available { get; init; }
+    public required bool IsYours { get; init; }
     public required Guid ShelterId { get; init; }
 };
 
@@ -20,6 +21,7 @@ public record PetSummaryResponse
     public required Guid Id { get; init; }
     public required string Name { get; init; }
     public required IEnumerable<string> Photos { get; init; }
+    public required bool IsYours { get; init; }
     public required bool Available { get; init; }
 };
 

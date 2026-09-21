@@ -10,6 +10,7 @@ public static class AuthEndpoints
     public static void MapAuthEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/auth").WithTags("Autenticación");
+        var frontendUrl = PatitasEnv.GetEnvVariable("FRONTEND_URL");
 
         group.MapPost("/login", async (LoginRequest request, IAuthService authService) =>
         {
@@ -22,8 +23,8 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("Iniciar Sesión")
-        .WithDescription("Iniciar sesión pez")
+        }).WithName("Login")
+        .WithDescription("Iniciar sesión pez, el token JWT se renueva cada $bold{20 dias}, osea que cada 20 dias hay que volver a iniciar sesión, guardar el token porque es lo que se va a usar para la mayoría de endpoints.")
         .Produces<AuthResponse>(StatusCodes.Status200OK);
 
         group.MapPost("/register", async ([FromForm] RegisterRequest request, IAuthService authService) =>
@@ -37,8 +38,8 @@ public static class AuthEndpoints
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("Registrarse")
-        .WithDescription("Registrarse pez")
+        }).WithName("Register")
+        .WithDescription("Registrarse pez.")
         .Produces<AuthResponse>(StatusCodes.Status200OK)
         .DisableAntiforgery();
 
@@ -46,14 +47,14 @@ public static class AuthEndpoints
             try
             {
                 await authService.VerifyEmailAsync(userId, token);
-                return Results.Ok("Correo verificado correctamente");
+                return Results.Redirect($"{frontendUrl}/user");
             }
             catch (Exception ex)
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("Verificar Correo")
-        .WithDescription("Verifica el correo del usuario, esta wea está pensada para que se redireccione desde frontend.");
+        }).WithName("VerifyEmail")
+        .WithDescription("Verifica el correo del usuario, esta wea está pensada para que redireccione a frontend.");
 
         group.MapGet("/send-verification-email", async (IAuthService authService, ClaimsPrincipal user) =>
         {
@@ -62,15 +63,14 @@ public static class AuthEndpoints
             try
             {
                 await authService.SendEmailVerificationAsync(Guid.Parse(userId));
-                var frontendUrl = PatitasEnv.GetEnvVariable("FRONTEND_URL");
-                return Results.Redirect($"{frontendUrl}/user");
+                return Results.Ok($"Se envió un correo de verificación.");
             }
             catch (Exception ex)
             {
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("Enviar Correo de Verificación")
-        .WithDescription("Envía un correo de verificación al usuario")
+        }).WithName("SendVerificationEmail")
+        .WithDescription("Envía un correo de verificación al usuario.")
         .RequireAuthorization("User")
         .RequireRateLimiting("EmailVerificationCooldown");
     }

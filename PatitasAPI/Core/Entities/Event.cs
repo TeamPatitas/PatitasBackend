@@ -3,17 +3,14 @@ namespace PatitasAPI.Core.Entities;
 public class Event
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-
     public string Name { get; set; }
-
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
     public DateTime EventDate { get; set; }
-    public string Latitude { get; set; }
-    public string Longitude { get; set; }
-    public string Description { get; set; }
-
-    public string PhotoUrl { get; set; }
+    public bool IsActive { get; set; } = false;
+    public string? Latitude { get; set; }
+    public string? Longitude { get; set; }
+    public string? Description { get; set; }
+    public string? PhotoUrl { get; set; }
 
     // Foreign Variables
     public Guid ShelterId { get; set; }

@@ -24,7 +24,7 @@ public static class ShelterEndpoints
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("CreateShelter")
-        .WithDescription("Crea un nuevo refugio, es todo xd, luego los devs verán si activan el refugio.")
+        .WithDescription("Crea un nuevo refugio, es todo xd, el refugio se crea con un el atributo $code{IsActive = false}, luego dependerá de los desarrolladores si se cambia a $code{true}.")
         .Produces<ShelterResponse>(StatusCodes.Status201Created)
         .RequireAuthorization("User")
         .DisableAntiforgery();
@@ -54,7 +54,7 @@ public static class ShelterEndpoints
             var result = await shelterService.GetAllAsync(page ?? 1, pageSize ?? 20, userId);
             return Results.Ok(result);
         }).WithName("GetAllShelters")
-        .WithDescription("Obtiene todos los refugios.")
+        .WithDescription("Obtiene todos los refugios, si eres Dev se obtiene todos los refugios, si eres usuario se obtienen solo los refugios activos.")
         .Produces<PagedResponse<ShelterSummaryResponse>>(StatusCodes.Status200OK)
         .RequireAuthorization("User");
 
@@ -81,7 +81,7 @@ public static class ShelterEndpoints
             }
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
         }).WithName("DeleteShelter")
-        .WithDescription("CUIDADO: Elimina un refugio, esto es irreversible y elimina todo lo relacionado a ella (adopciones, mascotas) usarlo con cautela, si eres dev tambien puedes eliminarlo a cualquiera 🐒 ")
+        .WithDescription("$important{CUIDADO: Esto es irreversible} y elimina todo lo relacionado a ella (adopciones, mascotas) usarlo con cautela, si eres dev tambien puedes eliminarlo a cualquiera 🐒 ")
         .RequireAuthorization("ShelterOwner");
     }
 }
