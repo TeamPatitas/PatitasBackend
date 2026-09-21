@@ -13,7 +13,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly IStorageService _storageService = storageService;
 
-    private static PetResponse ToResponse(Pet pet) => new PetResponse
+    private static PetResponse ToResponse(Pet pet, bool isYours) => new PetResponse
     {
         Id = pet.Id,
         Name = pet.Name,
@@ -24,16 +24,24 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         Story = pet.Story,
         Photos = pet.Photos,
         Available = pet.Available,
+        IsYours = isYours,
         ShelterId = pet.ShelterId
     };
 
-    private static PetSummaryResponse ToSummaryResponse(Pet pet) => new PetSummaryResponse
+    private static PetSummaryResponse ToSummaryResponse(Pet pet, bool isYours) => new PetSummaryResponse
     {
         Id = pet.Id,
         Name = pet.Name,
         Photos = pet.Photos,
+        IsYours = isYours,
         Available = pet.Available
     };
+
+    private static bool ComputeIsYours(AppUser? requester, Pet pet)
+    {
+        if (requester?.ShelterId == null) return false;
+        return requester.ShelterId == pet.ShelterId;
+    }
 
     private static void ValidatePhotoFiles(IEnumerable<IFormFile>? photos)
     {
@@ -107,7 +115,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
             await _dbContext.SaveChangesAsync();
         }
 
-        return ToResponse(pet);
+        return ToResponse(pet, true);
     }
 
     public async Task<PetResponse?> GetPetByIdAsync(Guid petId, string? requesterUserId = null)
@@ -115,10 +123,10 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         var pet = await _dbContext.Pets.FindAsync(petId);
         if (pet == null) return null;
 
-        if (requesterUserId == null) return ToResponse(pet);
+        if (requesterUserId == null) return ToResponse(pet, false);
 
         var requester = await _userManager.FindByIdAsync(requesterUserId);
-        if (requester == null) return ToResponse(pet);
+        if (requester == null) return ToResponse(pet, false);
 
         var isOwnerOrDev = await IsShelterOwnerOrDevAsync(requester);
 
@@ -132,7 +140,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
                 return null;
         }
 
-        return ToResponse(pet);
+        return ToResponse(pet, ComputeIsYours(requester, pet));
     }
 
     public Task<PetResponse?> GetPetByIdAsync(Guid petId) => GetPetByIdAsync(petId, null);
@@ -143,6 +151,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         pageSize = Math.Clamp(pageSize, 1, 50);
 
         IQueryable<Pet> query = _dbContext.Pets.AsNoTracking();
+        Guid? requesterShelterId = null;
 
         if (requesterUserId != null)
         {
@@ -159,10 +168,15 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
                     var isDev = await _userManager.IsInRoleAsync(requester, "Dev");
                     if (!isDev)
                     {
-                        if (requester.ShelterId != null)
-                            query = query.Where(p => p.ShelterId == requester.ShelterId);
+                        requesterShelterId = requester.ShelterId;
+                        if (requesterShelterId != null)
+                            query = query.Where(p => p.Available || p.ShelterId == requesterShelterId);
                         else
                             query = query.Where(p => p.Available);
+                    }
+                    else
+                    {
+                        requesterShelterId = requester.ShelterId;
                     }
                 }
             }
@@ -184,7 +198,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
 
         return new PagedResponse<PetSummaryResponse>
         {
-            Items = items.Select(ToSummaryResponse),
+            Items = items.Select(p => ToSummaryResponse(p, requesterShelterId != null && requesterShelterId == p.ShelterId)),
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount,
@@ -233,7 +247,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (request.Available.HasValue) pet.Available = request.Available.Value;
 
         await _dbContext.SaveChangesAsync();
-        return ToResponse(pet);
+        return ToResponse(pet, ComputeIsYours(user, pet));
     }
 
     public async Task<PetResponse?> UpdatePetPhotoAsync(Guid petId, int photoIndex, IFormFile photo, string userId)
@@ -264,7 +278,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (pet.Photos.Count > 3) pet.Photos = pet.Photos.Take(3).ToList();
 
         await _dbContext.SaveChangesAsync();
-        return ToResponse(pet);
+        return ToResponse(pet, ComputeIsYours(user, pet));
     }
 
     public async Task<bool> DeletePetAsync(Guid petId, string userId)
