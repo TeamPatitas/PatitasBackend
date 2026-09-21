@@ -103,7 +103,7 @@ public static class PetEndpoints
             catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("DeletePet")
-        .WithDescription("CUIDADO: Elimina una mascota pero tambien elimina todo lo relacionado a ella, es irreversible usarlo con cautela.")
+        .WithDescription("$important{CUIDADO: Usarlo con cautela}. Elimina una mascota pero también elimina todo lo relacionado a ella, es irreversible.")
         .Produces(StatusCodes.Status204NoContent)
         .RequireAuthorization("ShelterOwner");
     }

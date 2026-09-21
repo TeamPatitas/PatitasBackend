@@ -18,7 +18,7 @@ public static class AdminEndpoints
             var result = await healthService.CheckHealthAsync();
             return result.Status == "UP" ? Results.Ok(result) : Results.Json(result, statusCode: 503);
         }).WithName("HealthCheck")
-        .WithDescription("Verifica el estado de la api y sus dependencias, es piola pa saber que c cayó xd")
+        .WithDescription("Verifica el estado de la API y sus dependencias, es piola pa saber que c cayó xd")
         .Produces<HealthResponse>()
         .RequireAuthorization("DevOnly")
         .RequireRateLimiting("HealthCheckCooldown");
@@ -37,7 +37,7 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = ex.Message });
             }
         }).WithName("GetCurrentUser")
-        .WithDescription("Obtiene la información del usuario actual, necesita que el usuario haya iniciado sesión.")
+        .WithDescription("Obtiene la información del usuario actual, necesita que el usuario haya iniciado sesión, si eres dev puedes obtener la información de cualquier usuario.")
         .Produces<UserResponse>(StatusCodes.Status200OK)
         .RequireAuthorization("User");
 
@@ -54,7 +54,7 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = ex.Message });
             }
         }).WithName("UpdateCurrentUser")
-        .WithDescription("Actualiza la información del usuario, necesita que el usuario haya iniciado sesión, pero si tienes rol dev puedes modificar cualquier cosa a cualquiera xd.")
+        .WithDescription("Actualiza la información del usuario, necesita que el usuario haya iniciado sesión, pero si tienes rol dev puedes modificar cualquier cosa a cualquiera.")
         .Produces<UserResponse>(StatusCodes.Status200OK)
         .RequireAuthorization("User")
         .DisableAntiforgery();
@@ -72,7 +72,7 @@ public static class AdminEndpoints
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
             catch (Exception ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("Borrar Usuario")
-        .WithDescription("CUIDADO Borra el usuario con el ID especificado, esto es irreversible usarlo con mucha cautela, si eres dev tambien puedes eliminarlo a cualquiera 🐒 ")
+        .WithDescription("$important{CUIDADO: Esto es irreversible} usarlo con mucha cautela, elimina en cascada todo lo relacionado al usuario (adopciones, mascotas). si eres dev tambien puedes eliminarlo a cualquiera 🐒")
         .Produces<bool>(StatusCodes.Status200OK)
         .RequireAuthorization("User");
 
@@ -88,7 +88,7 @@ public static class AdminEndpoints
             }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("EnableShelter")
-        .WithDescription("Habilita un shelter con el ID especificado, hace que el refugio aparezca para todos los usuarios y luego asigna el rol ShelterOwner a todos los dueños del refugio.")
+        .WithDescription("Habilita un shelter con el ID especificado osea cambia $code{IsAviable=true}, luego hace que el refugio aparezca para todos los usuarios y agrega el rol $code{ShelterOwner} a todos los dueños del refugio.")
         .Produces<ShelterResponse?>(StatusCodes.Status200OK)
         .RequireAuthorization("DevOnly")
         .RequireRateLimiting("ShelterSwitchAviabilityCooldown");
@@ -103,7 +103,7 @@ public static class AdminEndpoints
             }
             catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("DisableShelter")
-        .WithDescription("Deshabilita un shelter con el ID especificado, hace que el refugio no aparezca para los usuarios y luego remueve el rol ShelterOwner de todos los dueños del refugio.")
+        .WithDescription("Deshabilita un shelter con el ID especificado osea cambia $code{IsAviable=false}, luego hace que el refugio no aparezca para todos los usuarios y quita el rol $code{ShelterOwner} de todos los dueños del refugio.")
         .Produces<ShelterResponse?>(StatusCodes.Status200OK)
         .RequireAuthorization("DevOnly")
         .RequireRateLimiting("ShelterSwitchAviabilityCooldown");
