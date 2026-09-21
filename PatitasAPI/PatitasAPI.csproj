@@ -7,6 +7,11 @@
     <UserSecretsId>226f0585-a0fa-41a5-83f8-a97118709982</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.103.3" />
     <PackageReference Include="DotNetEnv" Version="3.2.0" />

@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
@@ -52,6 +53,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     c.OperationFilter<DocsFilter>();
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    
+    c.IncludeXmlComments(xmlPath);
 });
 
 
