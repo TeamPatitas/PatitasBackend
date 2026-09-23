@@ -92,7 +92,7 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        var dbContext = scope.ServiceProvider.GetRequiredService<PatitasDbContext>(); // Usa el nombre exacto de tu DbContext
+        var dbContext = scope.ServiceProvider.GetRequiredService<PatitasDbContext>();
         await dbContext.Database.MigrateAsync();
     } catch (Exception ex)
     {
