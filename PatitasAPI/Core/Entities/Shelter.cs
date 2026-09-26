@@ -7,7 +7,7 @@ public class Shelter
     public string Name { get; set; }
 
     public string Address { get; set; }
-
+    public string PhoneNumber { get; set; }
     public double? Latitude { get; set; }
 
     public double? Longitude { get; set; }
@@ -23,10 +23,11 @@ public class Shelter
     #pragma warning disable CS8618
     public Shelter() { }
 
-    public Shelter(string name, string address, double? latitude = null, double? longitude = null, string? photoUrl = null)
+    public Shelter(string name, string address, string phoneNumber, double? latitude = null, double? longitude = null, string? photoUrl = null)
     {
         Name = name;
         Address = address;
+        PhoneNumber = phoneNumber;
         Latitude = latitude;
         Longitude = longitude;
         PhotoUrl = photoUrl;
