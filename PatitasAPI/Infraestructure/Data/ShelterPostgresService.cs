@@ -17,6 +17,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         Id = shelter.Id,
         Name = shelter.Name,
         Address = shelter.Address,
+        PhoneNumber = shelter.PhoneNumber,
         IsAvailable = shelter.IsAvailable,
         Latitude = shelter.Latitude,
         Longitude = shelter.Longitude,
@@ -38,9 +39,14 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         if (user.ShelterId != null)
             throw new InvalidOperationException("Ya tienes un refugio registrado. Solo se permite uno por usuario.");
 
+        if (string.IsNullOrWhiteSpace(req.Name)) throw new ArgumentException("Name es requerido.");
+        if (string.IsNullOrWhiteSpace(req.Address)) throw new ArgumentException("Address es requerido.");
+        if (string.IsNullOrWhiteSpace(req.PhoneNumber)) throw new ArgumentException("PhoneNumber es requerido.");
+
         var shelter = new Shelter(
-            req.Name,
-            req.Address,
+            req.Name.Trim(),
+            req.Address.Trim(),
+            req.PhoneNumber.Trim(),
             req.Latitude,
             req.Longitude,
             null
@@ -174,12 +180,17 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         if (request.Name != null)
         {
             if (string.IsNullOrWhiteSpace(request.Name)) throw new ArgumentException("Name no puede estar vacío");
-            shelter.Name = request.Name;
+            shelter.Name = request.Name.Trim();
         }
         if (request.Address != null)
         {
             if (string.IsNullOrWhiteSpace(request.Address)) throw new ArgumentException("Address no puede estar vacío");
-            shelter.Address = request.Address;
+            shelter.Address = request.Address.Trim();
+        }
+        if (request.PhoneNumber != null)
+        {
+            if (string.IsNullOrWhiteSpace(request.PhoneNumber)) throw new ArgumentException("PhoneNumber no puede estar vacío");
+            shelter.PhoneNumber = request.PhoneNumber.Trim();
         }
         if (request.Latitude.HasValue) shelter.Latitude = request.Latitude;
         if (request.Longitude.HasValue) shelter.Longitude = request.Longitude;

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PatitasAPI.Infraestructure.Data;
@@ -12,9 +13,11 @@ using PatitasAPI.Infraestructure.Data;
 namespace PatitasAPI.Migrations
 {
     [DbContext(typeof(PatitasDbContext))]
-    partial class PatitasDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926175056_PhoneNumberOnShelter")]
+    partial class PhoneNumberOnShelter
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

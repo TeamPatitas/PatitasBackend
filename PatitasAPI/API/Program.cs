@@ -80,23 +80,22 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
     try {
         var ctx = services.GetRequiredService<PatitasDbContext>();
         ctx.Database.EnsureCreated();
     } catch(Exception ex) {
-        var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Ocurrió un error al crear la base de datos.");
     }
 
     await AuthSeeder.SeedRolesAsync(scope.ServiceProvider);
 
-    try
-    {
+    try {
         var dbContext = scope.ServiceProvider.GetRequiredService<PatitasDbContext>();
+        logger.BeginScope("Aplicando migraciones de la base de datos...");
         await dbContext.Database.MigrateAsync();
-    } catch (Exception ex)
-    {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    } catch (Exception ex) {
         logger.LogError(ex, "Ocurrió un error al aplicar las migraciones de la base de datos.");
     }
 } 
