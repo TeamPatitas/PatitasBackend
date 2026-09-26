@@ -10,13 +10,17 @@ jobs:
     runs-on: ubuntu-latest 
 
     steps:
-      - name: Conectar al servidor y ejecutar el script
-        uses: appleboy/ssh-action@v1.0.3 
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # Todo lo que está debajo de 'script:' se ejecuta DENTRO de tu servidor AWS
-            cd ~/PatitasBackend
-            ./deploy.sh
+        - name: Conectar a la red privada de tailscale
+          uses: tailscale/github-action@v2
+          with:
+            authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+        - name: Conectar al servidor y ejecutar el script
+          uses: appleboy/ssh-action@v1.0.3 
+          with:
+            host: ${{ secrets.EC2_HOST }}
+            username: ${{ secrets.EC2_USERNAME }}
+            key: ${{ secrets.EC2_SSH_KEY }}
+            script: |
+              cd ~/PatitasAlRescate
+              ./deploy.sh

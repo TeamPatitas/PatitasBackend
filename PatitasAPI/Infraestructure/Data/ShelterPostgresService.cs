@@ -22,6 +22,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         Latitude = shelter.Latitude,
         Longitude = shelter.Longitude,
         PhotoUrl = shelter.PhotoUrl,
+        YapeQrCode = shelter.YapeQrCode,
         Owners = shelter.Owners.Select(o => Guid.Parse(o.Id)).ToList()
     };
 
@@ -61,6 +62,13 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             ValidatePhoto(photo);
             var key = $"shelters/{shelter.Id}.webp";
             shelter.PhotoUrl = await _storageService.UploadFileAsync(photo, key);
+            await _context.SaveChangesAsync();
+        }
+
+        if (req.YapeQrImage != null)
+        {
+            ValidatePhoto(req.YapeQrImage);
+            shelter.YapeQrCode = await _storageService.UploadFileAsync(req.YapeQrImage, $"{shelter.Id}-yapeqrcode.webp");
             await _context.SaveChangesAsync();
         }
 
@@ -201,6 +209,12 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             ValidatePhoto(photo);
             var key = $"shelters/{shelter.Id}.webp";
             shelter.PhotoUrl = await _storageService.UploadFileAsync(photo, key);
+        }
+
+        if (request.YapeQrImage != null)
+        {
+            ValidatePhoto(request.YapeQrImage);
+            shelter.YapeQrCode = await _storageService.UploadFileAsync(request.YapeQrImage, $"{shelter.Id}-yapeqrcode.webp");
         }
 
         await _context.SaveChangesAsync();

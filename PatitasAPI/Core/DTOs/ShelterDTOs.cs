@@ -10,6 +10,7 @@ public record ShelterResponse
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }
     public string? PhotoUrl { get; init; }
+    public string? YapeQrCode { get; init; }
     public required IEnumerable<Guid> Owners { get; init; }
 };
 
@@ -29,6 +30,7 @@ public record CreateShelterRequest
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }
     public IFormFile? Photo { get; init; }
+    public IFormFile? YapeQrImage { get; init; }
 };
 
 public record UpdateShelterRequest
@@ -39,4 +41,5 @@ public record UpdateShelterRequest
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }
     public IFormFile? Photo { get; init; }
+    public IFormFile? YapeQrImage { get; init; }
 };
