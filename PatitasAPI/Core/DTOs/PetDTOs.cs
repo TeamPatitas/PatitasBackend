@@ -12,6 +12,8 @@ public record PetResponse
     public required string Story { get; init; }
     public required IEnumerable<string> Photos { get; init; }
     public required bool Available { get; init; }
+    public required bool IsAdoptable { get; init; }
+    public required DateTime CreatedAt { get; init; }
     public required bool IsYours { get; init; }
     public required Guid ShelterId { get; init; }
 };
@@ -23,6 +25,8 @@ public record PetSummaryResponse
     public required IEnumerable<string> Photos { get; init; }
     public required bool IsYours { get; init; }
     public required bool Available { get; init; }
+    public required bool IsAdoptable { get; init; }
+    public required DateTime CreatedAt { get; init; }
 };
 
 public record CreatePetRequest
@@ -34,6 +38,7 @@ public record CreatePetRequest
     public required string Temperament { get; init; }
     public required string Story { get; init; }
     public bool? Available { get; init; } = false;
+    public bool? IsAdoptable { get; init; } = false;
     public IList<IFormFile>? Photos { get; init; }
 };
 
@@ -46,6 +51,7 @@ public record UpdatePetRequest
     public string? Temperament { get; init; }
     public string? Story { get; init; }
     public bool? Available { get; init; }
+    public bool? IsAdoptable { get; init; }
 };
 
 public record UpdatePetPhotoRequest

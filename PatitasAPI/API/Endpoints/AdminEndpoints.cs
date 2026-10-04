@@ -23,21 +23,30 @@ public static class AdminEndpoints
         .RequireAuthorization("DevOnly")
         .RequireRateLimiting("HealthCheckCooldown");
 
-        // User endpoints - mantienen permisos User
-        group.MapGet("/user", async (ClaimsPrincipal user, IAuthService authService) => {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null) return Results.Unauthorized();
+        group.MapGet("/user/{id:guid?}", async (Guid? id, ClaimsPrincipal user, IAuthService authService, UserManager<AppUser> userManager) => {
+            var currentUserId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (currentUserId == null) return Results.Unauthorized();
             try
             {
-                var response = await authService.GetUserAsync(Guid.Parse(userId));
+                var targetId = id ?? Guid.Parse(currentUserId);
+                if (targetId != Guid.Parse(currentUserId))
+                {
+                    var requester = await userManager.FindByIdAsync(currentUserId);
+                    if (requester == null) return Results.Unauthorized();
+                    if (!await userManager.IsInRoleAsync(requester, "Dev"))
+                        return Results.Json(new { message = "Solo un Dev puede ver información de otros usuarios." }, statusCode: 403);
+                }
+                var response = await authService.GetUserAsync(targetId);
                 return Results.Ok(response);
             }
             catch (Exception ex)
             {
+                if (ex.Message.Contains("no encontrado", StringComparison.OrdinalIgnoreCase))
+                    return Results.NotFound(new { message = ex.Message });
                 return Results.BadRequest(new { message = ex.Message });
             }
-        }).WithName("GetCurrentUser")
-        .WithDescription("Obtiene la información del usuario actual, necesita que el usuario haya iniciado sesión, si eres dev puedes obtener la información de cualquier usuario.")
+        }).WithName("GetUser")
+        .WithDescription("Obtiene la información del usuario actual si no se pasa ID, si eres dev puedes obtener la información de cualquier usuario pasando su ID.")
         .Produces<UserResponse>(StatusCodes.Status200OK)
         .RequireAuthorization("User");
 
