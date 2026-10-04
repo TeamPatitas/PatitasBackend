@@ -21,6 +21,10 @@ public class Pet
 
     public bool Available { get; set; } = false;
 
+    public bool IsAdoptable { get; set; } = false;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     // Foreign Variables
     public Guid ShelterId { get; set; }
     public Shelter Shelter { get; set; }

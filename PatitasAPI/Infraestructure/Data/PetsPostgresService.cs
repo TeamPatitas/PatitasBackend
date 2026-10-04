@@ -24,6 +24,8 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         Story = pet.Story,
         Photos = pet.Photos,
         Available = pet.Available,
+        IsAdoptable = pet.IsAdoptable,
+        CreatedAt = pet.CreatedAt,
         IsYours = isYours,
         ShelterId = pet.ShelterId
     };
@@ -34,7 +36,9 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         Name = pet.Name,
         Photos = pet.Photos,
         IsYours = isYours,
-        Available = pet.Available
+        Available = pet.Available,
+        IsAdoptable = pet.IsAdoptable,
+        CreatedAt = pet.CreatedAt
     };
 
     private static bool ComputeIsYours(AppUser? requester, Pet pet)
@@ -97,7 +101,8 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
             request.Available ?? false
         )
         {
-            ShelterId = user.ShelterId.Value
+            ShelterId = user.ShelterId.Value,
+            IsAdoptable = request.IsAdoptable ?? false
         };
 
         _dbContext.Pets.Add(pet);
@@ -245,6 +250,7 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
             pet.Story = request.Story;
         }
         if (request.Available.HasValue) pet.Available = request.Available.Value;
+        if (request.IsAdoptable.HasValue) pet.IsAdoptable = request.IsAdoptable.Value;
 
         await _dbContext.SaveChangesAsync();
         return ToResponse(pet, ComputeIsYours(user, pet));
