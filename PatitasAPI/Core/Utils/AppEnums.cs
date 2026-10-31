@@ -11,11 +11,3 @@ public enum Gender
     MALE,
     FEMALE
 }
-
-public enum AdoptionStatus
-{
-    REQUESTED,
-    APPROVED,
-    REJECTED,
-    CANCELLED
-}
