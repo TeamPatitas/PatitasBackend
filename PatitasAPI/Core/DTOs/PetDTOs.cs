@@ -16,6 +16,8 @@ public record PetResponse
     public required DateTime CreatedAt { get; init; }
     public required bool IsYours { get; init; }
     public required Guid ShelterId { get; init; }
+    public required bool RequireForm { get; init; }
+    public Guid? FormId { get; init; }
 };
 
 public record PetSummaryResponse
@@ -39,6 +41,8 @@ public record CreatePetRequest
     public required string Story { get; init; }
     public bool? Available { get; init; } = false;
     public bool? IsAdoptable { get; init; } = false;
+    public bool? RequireForm { get; init; }
+    public Guid? FormId { get; init; }
     public IList<IFormFile>? Photos { get; init; }
 };
 
@@ -52,10 +56,6 @@ public record UpdatePetRequest
     public string? Story { get; init; }
     public bool? Available { get; init; }
     public bool? IsAdoptable { get; init; }
-};
-
-public record UpdatePetPhotoRequest
-{
-    public required int PhotoIndex { get; init; }
-    public required IFormFile Photo { get; init; }
+    public Guid? FormId { get; init; }
+    public bool? RequireForm { get; init; }
 };

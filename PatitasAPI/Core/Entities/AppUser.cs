@@ -15,6 +15,5 @@ public class AppUser : IdentityUser
     public Shelter? Shelter { get; set; }
 
     // Navigation Properties
-    public ICollection<Adoption> Adoptions { get; set; } = [];
     public ICollection<Favorite> Favorites { get; set; } = [];
 }

@@ -57,6 +57,28 @@ public class CloudflareR2Service : IStorageService
         return UploadFileAsync(file, key);
     }
 
+    public async Task<string> UploadPdfAsync(IFormFile file, string key)
+    {
+        if (file.Length == 0) throw new ArgumentException("El archivo está vacío.");
+        if (file.Length > 5 * 1024 * 1024) throw new ArgumentException("El archivo excede 5MB.");
+
+        using var stream = file.OpenReadStream();
+
+        var uploadRequest = new TransferUtilityUploadRequest
+        {
+            InputStream = stream,
+            Key = key,
+            BucketName = _bucketName,
+            ContentType = "application/pdf",
+            DisablePayloadSigning = true
+        };
+
+        var transferUtility = new TransferUtility(_s3Client);
+        await transferUtility.UploadAsync(uploadRequest);
+
+        return $"{_publicUrl}/{key}";
+    }
+
     private static async Task<MemoryStream> ConvertToWebpAsync(IFormFile file)
     {
         using var memoryStream = new MemoryStream();

@@ -155,35 +155,6 @@ namespace PatitasAPI.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("PatitasAPI.Core.Entities.Adoption", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AppUserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("PetId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AppUserId");
-
-                    b.HasIndex("PetId");
-
-                    b.ToTable("Adoptions");
-                });
-
             modelBuilder.Entity("PatitasAPI.Core.Entities.AppUser", b =>
                 {
                     b.Property<string>("Id")
@@ -332,6 +303,34 @@ namespace PatitasAPI.Migrations
                     b.ToTable("Favorites");
                 });
 
+            modelBuilder.Entity("PatitasAPI.Core.Entities.Form", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ShelterId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShelterId");
+
+                    b.ToTable("Forms");
+                });
+
             modelBuilder.Entity("PatitasAPI.Core.Entities.Pet", b =>
                 {
                     b.Property<Guid>("Id")
@@ -348,6 +347,9 @@ namespace PatitasAPI.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("FormId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Gender")
                         .HasColumnType("integer");
 
@@ -362,6 +364,9 @@ namespace PatitasAPI.Migrations
                     b.PrimitiveCollection<List<string>>("Photos")
                         .IsRequired()
                         .HasColumnType("text[]");
+
+                    b.Property<bool>("RequireForm")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("ShelterId")
                         .HasColumnType("uuid");
@@ -378,6 +383,8 @@ namespace PatitasAPI.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FormId");
 
                     b.HasIndex("ShelterId");
 
@@ -473,25 +480,6 @@ namespace PatitasAPI.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PatitasAPI.Core.Entities.Adoption", b =>
-                {
-                    b.HasOne("PatitasAPI.Core.Entities.AppUser", "AppUser")
-                        .WithMany("Adoptions")
-                        .HasForeignKey("AppUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("PatitasAPI.Core.Entities.Pet", "Pet")
-                        .WithMany("Adoptions")
-                        .HasForeignKey("PetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AppUser");
-
-                    b.Navigation("Pet");
-                });
-
             modelBuilder.Entity("PatitasAPI.Core.Entities.AppUser", b =>
                 {
                     b.HasOne("PatitasAPI.Core.Entities.Shelter", "Shelter")
@@ -532,10 +520,10 @@ namespace PatitasAPI.Migrations
                     b.Navigation("Pet");
                 });
 
-            modelBuilder.Entity("PatitasAPI.Core.Entities.Pet", b =>
+            modelBuilder.Entity("PatitasAPI.Core.Entities.Form", b =>
                 {
                     b.HasOne("PatitasAPI.Core.Entities.Shelter", "Shelter")
-                        .WithMany("Pets")
+                        .WithMany("Forms")
                         .HasForeignKey("ShelterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -543,23 +531,44 @@ namespace PatitasAPI.Migrations
                     b.Navigation("Shelter");
                 });
 
+            modelBuilder.Entity("PatitasAPI.Core.Entities.Pet", b =>
+                {
+                    b.HasOne("PatitasAPI.Core.Entities.Form", "Form")
+                        .WithMany("Pets")
+                        .HasForeignKey("FormId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PatitasAPI.Core.Entities.Shelter", "Shelter")
+                        .WithMany("Pets")
+                        .HasForeignKey("ShelterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Form");
+
+                    b.Navigation("Shelter");
+                });
+
             modelBuilder.Entity("PatitasAPI.Core.Entities.AppUser", b =>
                 {
-                    b.Navigation("Adoptions");
-
                     b.Navigation("Favorites");
+                });
+
+            modelBuilder.Entity("PatitasAPI.Core.Entities.Form", b =>
+                {
+                    b.Navigation("Pets");
                 });
 
             modelBuilder.Entity("PatitasAPI.Core.Entities.Pet", b =>
                 {
-                    b.Navigation("Adoptions");
-
                     b.Navigation("Favorites");
                 });
 
             modelBuilder.Entity("PatitasAPI.Core.Entities.Shelter", b =>
                 {
                     b.Navigation("Events");
+
+                    b.Navigation("Forms");
 
                     b.Navigation("Owners");
 

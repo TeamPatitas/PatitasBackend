@@ -6,10 +6,10 @@ namespace PatitasAPI.Infraestructure.Data;
 
 public class PatitasDbContext(DbContextOptions<PatitasDbContext> options) : IdentityDbContext<AppUser>(options)
 {
-    public DbSet<Adoption> Adoptions { get; set; }
     public DbSet<AppUser> AppUsers { get; set; }
     public DbSet<Event> Events { get; set; }
     public DbSet<Favorite> Favorites { get; set; }
+    public DbSet<Form> Forms { get; set; }
     public DbSet<Pet> Pets { get; set; }
     public DbSet<Shelter> Shelters { get; set; }
 
@@ -32,7 +32,22 @@ public class PatitasDbContext(DbContextOptions<PatitasDbContext> options) : Iden
             entity.HasOne(p => p.Shelter)
                 .WithMany(s => s.Pets)
                 .HasForeignKey(p => p.ShelterId)
-                .OnDelete(DeleteBehavior.Cascade); // Borrado en cascada: si se borra el refugio se borran mascotas, adopciones y favoritos
+                .OnDelete(DeleteBehavior.Cascade); // Borrado en cascada: si se borra el refugio se borran mascotas y favoritos
+
+            entity.HasOne(p => p.Form)
+                .WithMany(f => f.Pets)
+                .HasForeignKey(p => p.FormId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<Form>(entity =>
+        {
+            entity.Property(f => f.Name).IsRequired().HasMaxLength(100);
+            entity.HasOne(f => f.Shelter)
+                .WithMany(s => s.Forms)
+                .HasForeignKey(f => f.ShelterId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<Event>(entity =>
@@ -54,24 +69,7 @@ public class PatitasDbContext(DbContextOptions<PatitasDbContext> options) : Iden
             entity.HasOne(f => f.Pet)
                 .WithMany(p => p.Favorites)
                 .HasForeignKey(f => f.PetId)
-                .OnDelete(DeleteBehavior.Cascade) 
-                .HasForeignKey(f => f.PetId)
                 .OnDelete(DeleteBehavior.Cascade); // Borras la mascota -> Se quita de favoritos de todos
-        });
-
-        builder.Entity<Adoption>(entity =>
-        {
-            entity.HasKey(a => a.Id);
-
-            entity.HasOne(a => a.AppUser)
-                .WithMany(u => u.Adoptions)
-                .HasForeignKey(a => a.AppUserId)
-                .OnDelete(DeleteBehavior.Restrict); // NUNCA borrar historial de adopción si se borra el usuario
-
-            entity.HasOne(a => a.Pet)
-                .WithMany(p => p.Adoptions)
-                .HasForeignKey(a => a.PetId)
-                .OnDelete(DeleteBehavior.Cascade); // Borrado en cascada: si se borra la mascota se borran sus adopciones (c va a avisar eso en FrontEnd)
         });
     }
 }

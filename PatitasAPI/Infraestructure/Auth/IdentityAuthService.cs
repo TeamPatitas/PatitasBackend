@@ -236,16 +236,6 @@ public class IdentityAuthService(UserManager<AppUser> userManager, IStorageServi
         if (targetUser.ShelterId != null)
             throw new InvalidOperationException("No se puede borrar usuario con refugio asignado");
 
-        var pendingAdoptions = await _dbContext.Adoptions
-            .Where(a => a.AppUserId == targetUser.Id && a.Status == AdoptionStatus.REQUESTED)
-            .ToListAsync();
-        foreach (var ad in pendingAdoptions)
-        {
-            ad.Status = AdoptionStatus.CANCELLED;
-        }
-        if (pendingAdoptions.Count > 0)
-            await _dbContext.SaveChangesAsync();
-
         var result = await _userManager.DeleteAsync(targetUser);
         if (!result.Succeeded) throw new Exception(string.Join(", ", result.Errors.Select(e => e.Description)));
         return true;
