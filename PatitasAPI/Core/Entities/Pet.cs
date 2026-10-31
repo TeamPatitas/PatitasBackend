@@ -23,14 +23,17 @@ public class Pet
 
     public bool IsAdoptable { get; set; } = false;
 
+    public bool RequireForm { get; set; } = false;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Foreign Variables
     public Guid ShelterId { get; set; }
     public Shelter Shelter { get; set; }
+    public Guid? FormId { get; set; }
+    public Form? Form { get; set; }
 
     // Navigation Properties
-    public ICollection<Adoption> Adoptions { get; set; } = [];
     public ICollection<Favorite> Favorites { get; set; } = [];
 
     #pragma warning disable CS8618

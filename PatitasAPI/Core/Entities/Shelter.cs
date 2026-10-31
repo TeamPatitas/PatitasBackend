@@ -19,6 +19,7 @@ public class Shelter
     public ICollection<Pet> Pets { get; set; } = [];
     public ICollection<Event> Events { get; set; } = [];
     public ICollection<AppUser> Owners { get; set; } = [];
+    public ICollection<Form> Forms { get; set; } = [];
 
     #pragma warning disable CS8618
     public Shelter() { }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -16,6 +16,12 @@ namespace PatitasAPI.Migrations
                 type: "boolean",
                 nullable: false,
                 defaultValue: false);
+
+            migrationBuilder.AddColumn<string>(
+                name: "YapeQrCode",
+                table: "Shelters",
+                type: "text",
+                nullable: true);
         }
 
         /// <inheritdoc />
@@ -24,6 +30,10 @@ namespace PatitasAPI.Migrations
             migrationBuilder.DropColumn(
                 name: "IsActive",
                 table: "Events");
+
+            migrationBuilder.DropColumn(
+                name: "YapeQrCode",
+                table: "Shelters");
         }
     }
 }
