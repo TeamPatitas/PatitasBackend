@@ -29,6 +29,40 @@ public static class ShelterEndpoints
         .RequireAuthorization("User")
         .DisableAntiforgery();
 
+        group.MapPost("/form", async ([FromForm] UploadFormRequest request, ClaimsPrincipal user, IShelterService shelterService) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Results.Unauthorized();
+            try
+            {
+                var created = await shelterService.UploadFormAsync(request, userId);
+                return Results.Created($"/shelter/form/{created.Id}", created);
+            }
+            catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
+            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("UploadShelterForm")
+        .WithDescription("Sube un formulario en formato .pdf (máx. 5MB) asociado al refugio del usuario autenticado. Límite máximo de 5 formularios por refugio.")
+        .Produces<FormResponse>(StatusCodes.Status201Created)
+        .RequireAuthorization("ShelterOwner")
+        .DisableAntiforgery();
+
+        group.MapGet("/forms", async (ClaimsPrincipal user, IShelterService shelterService) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Results.Unauthorized();
+            try
+            {
+                var result = await shelterService.GetFormsAsync(userId);
+                return Results.Ok(result);
+            }
+            catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
+            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("GetShelterForms")
+        .WithDescription("Lista todos los formularios asociados al refugio del usuario autenticado.")
+        .Produces<PagedResponse<FormResponse>>(StatusCodes.Status200OK)
+        .RequireAuthorization("ShelterOwner");
+
         group.MapPatch("/{id:guid}", async (Guid id, [FromForm] UpdateShelterRequest request, ClaimsPrincipal user, IShelterService shelterService) =>
         {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);

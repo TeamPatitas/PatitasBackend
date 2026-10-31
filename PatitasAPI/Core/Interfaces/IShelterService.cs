@@ -11,4 +11,6 @@ public interface IShelterService
     Task<ShelterResponse?> GetByIdAsync(Guid shelterId, string? requesterUserId = null);
     Task<ShelterResponse?> UpdateAsync(Guid shelterId, UpdateShelterRequest request, string userId);
     Task<bool> DeleteAsync(Guid shelterId, string userId);
+    Task<FormResponse> UploadFormAsync(UploadFormRequest request, string userId);
+    Task<PagedResponse<FormResponse>> GetFormsAsync(string userId);
 }

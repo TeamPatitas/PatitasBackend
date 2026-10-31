@@ -90,6 +90,95 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             throw new ArgumentException($"Tipo de imagen no permitido: {ct}. Use jpeg/png/webp.");
     }
 
+    private static void ValidatePdf(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            throw new ArgumentException("El archivo PDF es requerido y no puede estar vacío.");
+        if (file.Length > 5 * 1024 * 1024)
+            throw new ArgumentException("El archivo PDF excede el límite máximo de 5MB.");
+
+        var ct = file.ContentType.ToLowerInvariant();
+        var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        if (ct != "application/pdf" || ext != ".pdf")
+            throw new ArgumentException("Solo se permiten archivos en formato .pdf.");
+    }
+
+    public async Task<FormResponse> UploadFormAsync(UploadFormRequest request, string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId) ?? throw new UnauthorizedAccessException("Usuario no encontrado.");
+
+        var isOwnerOrDev = await _userManager.IsInRoleAsync(user, "ShelterOwner") || await _userManager.IsInRoleAsync(user, "Dev");
+        if (!isOwnerOrDev)
+            throw new UnauthorizedAccessException("Se requiere rol ShelterOwner.");
+
+        if (user.ShelterId == null)
+            throw new InvalidOperationException("No existe un refugio asociado a tu usuario.");
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            throw new ArgumentException("Name es requerido.");
+        if (request.Name.Trim().Length > 100)
+            throw new ArgumentException("Name máximo 100 caracteres.");
+
+        ValidatePdf(request.File);
+
+        var shelterId = user.ShelterId.Value;
+        var currentFormsCount = await _context.Forms.CountAsync(f => f.ShelterId == shelterId);
+        if (currentFormsCount >= 5)
+            throw new InvalidOperationException("Se ha alcanzado el límite máximo de 5 formularios por refugio.");
+
+        var form = new Form(request.Name.Trim(), string.Empty, shelterId);
+        var key = $"shelters/{shelterId}/forms/{form.Id}.pdf";
+        form.FileUrl = await _storageService.UploadPdfAsync(request.File, key);
+
+        _context.Forms.Add(form);
+        await _context.SaveChangesAsync();
+
+        return new FormResponse
+        {
+            Id = form.Id,
+            Name = form.Name,
+            FileUrl = form.FileUrl,
+            CreatedAt = form.CreatedAt,
+            ShelterId = form.ShelterId
+        };
+    }
+
+    public async Task<PagedResponse<FormResponse>> GetFormsAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId) ?? throw new UnauthorizedAccessException("Usuario no encontrado.");
+
+        var isOwnerOrDev = await _userManager.IsInRoleAsync(user, "ShelterOwner") || await _userManager.IsInRoleAsync(user, "Dev");
+        if (!isOwnerOrDev)
+            throw new UnauthorizedAccessException("Se requiere rol ShelterOwner.");
+
+        if (user.ShelterId == null)
+            throw new InvalidOperationException("No existe un refugio asociado a tu usuario.");
+
+        var shelterId = user.ShelterId.Value;
+        var forms = await _context.Forms
+            .AsNoTracking()
+            .Where(f => f.ShelterId == shelterId)
+            .OrderByDescending(f => f.CreatedAt)
+            .Select(f => new FormResponse
+            {
+                Id = f.Id,
+                Name = f.Name,
+                FileUrl = f.FileUrl,
+                CreatedAt = f.CreatedAt,
+                ShelterId = f.ShelterId
+            })
+            .ToListAsync();
+
+        return new PagedResponse<FormResponse>
+        {
+            Items = forms,
+            Page = 1,
+            PageSize = 5,
+            TotalCount = forms.Count,
+            TotalPages = forms.Count > 0 ? 1 : 0
+        };
+    }
+
     public async Task<ShelterResponse?> EnableAsync(Guid shelterId)
     {
         var shelter = await _context.Shelters.Include(s => s.Owners).FirstOrDefaultAsync(s => s.Id == shelterId);

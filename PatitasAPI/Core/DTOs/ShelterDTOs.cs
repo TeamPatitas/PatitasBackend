@@ -43,3 +43,18 @@ public record UpdateShelterRequest
     public IFormFile? Photo { get; init; }
     public IFormFile? YapeQrImage { get; init; }
 };
+
+public record UploadFormRequest
+{
+    public required string Name { get; init; }
+    public required IFormFile File { get; init; }
+};
+
+public record FormResponse
+{
+    public required Guid Id { get; init; }
+    public required string Name { get; init; }
+    public required string FileUrl { get; init; }
+    public required DateTime CreatedAt { get; init; }
+    public required Guid ShelterId { get; init; }
+};
