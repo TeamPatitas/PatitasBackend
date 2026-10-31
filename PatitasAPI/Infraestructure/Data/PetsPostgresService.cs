@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using PatitasAPI.Core.DTOs;
 using PatitasAPI.Core.Entities;
 using PatitasAPI.Core.Interfaces;
-using PatitasAPI.Infraestructure.Data;
 
 namespace PatitasAPI.Infraestructure.Data;
 
@@ -27,7 +26,9 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         IsAdoptable = pet.IsAdoptable,
         CreatedAt = pet.CreatedAt,
         IsYours = isYours,
-        ShelterId = pet.ShelterId
+        ShelterId = pet.ShelterId,
+        RequireForm = pet.RequireForm,
+        FormId = pet.FormId
     };
 
     private static PetSummaryResponse ToSummaryResponse(Pet pet, bool isYours) => new PetSummaryResponse
@@ -90,6 +91,19 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         if (string.IsNullOrWhiteSpace(request.Story)) throw new ArgumentException("Story es requerido.");
         ValidatePhotoFiles(request.Photos);
 
+        var shelterId = user.ShelterId.Value;
+
+        if (request.FormId.HasValue)
+        {
+            var formExists = await _dbContext.Forms.AnyAsync(f => f.Id == request.FormId.Value && f.ShelterId == shelterId);
+            if (!formExists)
+                throw new ArgumentException("El formulario especificado no existe o no pertenece a tu refugio.");
+        }
+
+        var requireForm = request.RequireForm ?? false;
+        if (requireForm && !request.FormId.HasValue)
+            throw new ArgumentException("Si RequireForm es true, debes proporcionar un FormId válido.");
+
         var pet = new Pet(
             request.Name,
             request.Species,
@@ -101,8 +115,10 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
             request.Available ?? false
         )
         {
-            ShelterId = user.ShelterId.Value,
-            IsAdoptable = request.IsAdoptable ?? false
+            ShelterId = shelterId,
+            IsAdoptable = request.IsAdoptable ?? false,
+            RequireForm = requireForm,
+            FormId = request.FormId
         };
 
         _dbContext.Pets.Add(pet);
@@ -251,6 +267,26 @@ public class PetsPostgresService(PatitasDbContext dbContext, UserManager<AppUser
         }
         if (request.Available.HasValue) pet.Available = request.Available.Value;
         if (request.IsAdoptable.HasValue) pet.IsAdoptable = request.IsAdoptable.Value;
+
+        if (request.FormId.HasValue)
+        {
+            var formExists = await _dbContext.Forms.AnyAsync(f => f.Id == request.FormId.Value && f.ShelterId == pet.ShelterId);
+            if (!formExists)
+                throw new ArgumentException("El formulario especificado no existe o no pertenece al refugio de la mascota.");
+            pet.FormId = request.FormId.Value;
+        }
+
+        if (request.RequireForm.HasValue)
+        {
+            pet.RequireForm = request.RequireForm.Value;
+            if (!pet.RequireForm && !request.FormId.HasValue)
+            {
+                pet.FormId = null;
+            }
+        }
+
+        if (pet.RequireForm && !pet.FormId.HasValue)
+            throw new ArgumentException("Si RequireForm es true, la mascota debe tener un FormId asignado.");
 
         await _dbContext.SaveChangesAsync();
         return ToResponse(pet, ComputeIsYours(user, pet));
