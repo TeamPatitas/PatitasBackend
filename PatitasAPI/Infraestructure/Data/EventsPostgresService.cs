@@ -83,8 +83,8 @@ public class EventsPostgresService(PatitasDbContext dbContext, UserManager<AppUs
             Name = request.Name.Trim(),
             EventDate = request.EventDate.ToUniversalTime(),
             Description = request.Description,
-            Latitude = request.Latitude,
-            Longitude = request.Longitude,
+            Latitude = request.Location?.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            Longitude = request.Location?.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture),
             IsActive = request.IsActive ?? false,
             ShelterId = user.ShelterId.Value
         };

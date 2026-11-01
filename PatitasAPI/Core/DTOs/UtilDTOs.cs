@@ -21,3 +21,9 @@ public record HealthResponse
     public required string Status { get; init; }
     public required IDictionary<string, HealthServiceResult> Services { get; init; }
 };
+
+public record Location
+{
+    public required double Latitude { get; init; }
+    public required double Longitude { get; init; }
+};

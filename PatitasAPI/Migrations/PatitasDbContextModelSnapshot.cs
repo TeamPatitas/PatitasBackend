@@ -397,10 +397,6 @@ namespace PatitasAPI.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("boolean");
 
@@ -420,6 +416,9 @@ namespace PatitasAPI.Migrations
 
                     b.Property<string>("PhotoUrl")
                         .HasColumnType("text");
+
+                    b.Property<bool>("ShowAddress")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("YapeQrCode")
                         .HasColumnType("text");

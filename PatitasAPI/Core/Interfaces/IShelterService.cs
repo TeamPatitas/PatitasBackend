@@ -13,4 +13,5 @@ public interface IShelterService
     Task<bool> DeleteAsync(Guid shelterId, string userId);
     Task<FormResponse> UploadFormAsync(UploadFormRequest request, string userId);
     Task<PagedResponse<FormResponse>> GetFormsAsync(string userId);
+    Task<FormResponse?> GetFormByIdAsync(Guid formId);
 }
