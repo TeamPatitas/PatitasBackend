@@ -12,15 +12,15 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly IStorageService _storageService = storageService;
 
-    private static ShelterResponse ToResponse(Shelter shelter) => new ShelterResponse
+    private static ShelterResponse ToResponse(Shelter shelter, bool isOwner = false) => new ShelterResponse
     {
         Id = shelter.Id,
         Name = shelter.Name,
-        Address = shelter.Address,
         PhoneNumber = shelter.PhoneNumber,
         IsAvailable = shelter.IsAvailable,
-        Latitude = shelter.Latitude,
-        Longitude = shelter.Longitude,
+        Location = (shelter.ShowAddress || isOwner) && shelter.Latitude.HasValue && shelter.Longitude.HasValue
+            ? new Location { Latitude = shelter.Latitude.Value, Longitude = shelter.Longitude.Value }
+            : null,
         PhotoUrl = shelter.PhotoUrl,
         YapeQrCode = shelter.YapeQrCode,
         Owners = shelter.Owners.Select(o => Guid.Parse(o.Id)).ToList()
@@ -41,17 +41,18 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             throw new InvalidOperationException("Ya tienes un refugio registrado. Solo se permite uno por usuario.");
 
         if (string.IsNullOrWhiteSpace(req.Name)) throw new ArgumentException("Name es requerido.");
-        if (string.IsNullOrWhiteSpace(req.Address)) throw new ArgumentException("Address es requerido.");
         if (string.IsNullOrWhiteSpace(req.PhoneNumber)) throw new ArgumentException("PhoneNumber es requerido.");
 
         var shelter = new Shelter(
             req.Name.Trim(),
-            req.Address.Trim(),
             req.PhoneNumber.Trim(),
             req.Latitude,
             req.Longitude,
             null
-        );
+        )
+        {
+            ShowAddress = req.ShowAddress ?? true
+        };
 
         _context.Shelters.Add(shelter);
         await _context.SaveChangesAsync();
@@ -78,7 +79,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
             throw new InvalidOperationException("Error al asignar refugio al usuario: " + string.Join(", ", updateResult.Errors.Select(e => e.Description)));
 
         await _context.Entry(shelter).Collection(s => s.Owners).LoadAsync();
-        return ToResponse(shelter);
+        return ToResponse(shelter, isOwner: true);
     }
 
     private static void ValidatePhoto(IFormFile photo)
@@ -251,17 +252,18 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         var shelter = await _context.Shelters.Include(s => s.Owners).FirstOrDefaultAsync(s => s.Id == shelterId);
         if (shelter == null) return null;
 
+        var isOwner = requesterUserId != null && shelter.Owners.Any(o => o.Id == requesterUserId);
+
         if (!shelter.IsAvailable)
         {
             if (requesterUserId == null) return null;
             var user = await _userManager.FindByIdAsync(requesterUserId);
             if (user == null) return null;
             var isDev = await _userManager.IsInRoleAsync(user, "Dev");
-            var isOwner = user.ShelterId == shelter.Id;
             if (!isDev && !isOwner) return null;
         }
 
-        return ToResponse(shelter);
+        return ToResponse(shelter, isOwner);
     }
 
     public async Task<ShelterResponse?> UpdateAsync(Guid shelterId, UpdateShelterRequest request, string userId)
@@ -271,18 +273,13 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         if (shelter == null) return null;
 
         var isDev = await _userManager.IsInRoleAsync(user, "Dev");
-        var isOwner = user.ShelterId == shelterId;
+        var isOwner = user.ShelterId == shelterId || shelter.Owners.Any(o => o.Id == userId);
         if (!isDev && !isOwner) throw new UnauthorizedAccessException("No puedes modificar este refugio");
 
         if (request.Name != null)
         {
             if (string.IsNullOrWhiteSpace(request.Name)) throw new ArgumentException("Name no puede estar vacío");
             shelter.Name = request.Name.Trim();
-        }
-        if (request.Address != null)
-        {
-            if (string.IsNullOrWhiteSpace(request.Address)) throw new ArgumentException("Address no puede estar vacío");
-            shelter.Address = request.Address.Trim();
         }
         if (request.PhoneNumber != null)
         {
@@ -291,6 +288,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         }
         if (request.Latitude.HasValue) shelter.Latitude = request.Latitude;
         if (request.Longitude.HasValue) shelter.Longitude = request.Longitude;
+        if (request.ShowAddress.HasValue) shelter.ShowAddress = request.ShowAddress.Value;
 
         var photo = request.Photo;
         if (photo != null)
@@ -307,7 +305,7 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         }
 
         await _context.SaveChangesAsync();
-        return ToResponse(shelter);
+        return ToResponse(shelter, isOwner);
     }
 
     public async Task<bool> DeleteAsync(Guid shelterId, string userId)
@@ -329,5 +327,22 @@ public class ShelterPostgresService(PatitasDbContext context, UserManager<AppUse
         _context.Shelters.Remove(shelter);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<FormResponse?> GetFormByIdAsync(Guid formId)
+    {
+        var form = await _context.Forms
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Id == formId);
+        if (form == null) return null;
+
+        return new FormResponse
+        {
+            Id = form.Id,
+            Name = form.Name,
+            FileUrl = form.FileUrl,
+            CreatedAt = form.CreatedAt,
+            ShelterId = form.ShelterId
+        };
     }
 }

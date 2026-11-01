@@ -63,6 +63,23 @@ public static class ShelterEndpoints
         .Produces<PagedResponse<FormResponse>>(StatusCodes.Status200OK)
         .RequireAuthorization("ShelterOwner");
 
+        group.MapGet("/form/{id:guid}", async (Guid id, ClaimsPrincipal user, IShelterService shelterService) =>
+        {
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Results.Unauthorized();
+            try
+            {
+                var result = await shelterService.GetFormByIdAsync(id);
+                if (result == null) return Results.NotFound(new { message = "Formulario no encontrado." });
+                return Results.Ok(result);
+            }
+            catch (UnauthorizedAccessException ex) { return Results.Json(new { message = ex.Message }, statusCode: 403); }
+            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("GetShelterFormById")
+        .WithDescription("Obtiene un formulario específico del refugio del usuario autenticado.")
+        .Produces<FormResponse?>(StatusCodes.Status200OK)
+        .RequireAuthorization("User");
+
         group.MapPatch("/{id:guid}", async (Guid id, [FromForm] UpdateShelterRequest request, ClaimsPrincipal user, IShelterService shelterService) =>
         {
             var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);

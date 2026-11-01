@@ -3,9 +3,8 @@ public record CreateEventRequest {
     public required string Name { get; init; }
     public required DateTime EventDate { get; init; }
     public DateTime? CreatedAt { get; init; }
-    public string? Description { get; init; }
-    public string? Latitude { get; set; }
-    public string? Longitude { get; set; }
+    public string? Description { get; init; }   
+    public Location? Location { get; init; }
     public bool? IsActive { get; set; }
     public IFormFile? Image { get; init; }
 };
